@@ -15,6 +15,7 @@ export function LibraryListView({ onAddMovie }: LibraryListViewProps) {
   const rows = useMemo(
     () =>
       movies.map((movie) => ({
+        tmdbId: movie.tmdbId,
         poster: movie.posterUrl ? (
           <img
             src={movie.posterUrl}

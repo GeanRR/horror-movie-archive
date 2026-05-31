@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { LIBRARY_LIST_COLUMNS } from "@/lib/library/list-columns";
 import type { LibraryMovieListRow } from "@/lib/library/list-columns";
@@ -17,6 +18,8 @@ export function LibraryListTable({
   onAddMovie,
   className,
 }: LibraryListTableProps) {
+  const router = useRouter();
+
   const isEmpty = rows.length === 0;
   const columnCount = LIBRARY_LIST_COLUMNS.length;
 
@@ -42,7 +45,17 @@ export function LibraryListTable({
               </tr>
             ) : (
               rows.map((row, index) => (
-                <tr key={index} className="library-list-row">
+                <tr
+                  key={index}
+                  className="library-list-row cursor-pointer hover:bg-accent/30 transition-colors"
+                  onClick={() => {
+                    const movieId = (row as any).tmdbId;
+
+                    if (movieId) {
+                      router.push(`/movies/${movieId}`);
+                    }
+                  }}
+                >
                   {LIBRARY_LIST_COLUMNS.map((column) => (
                     <td
                       key={column.id}

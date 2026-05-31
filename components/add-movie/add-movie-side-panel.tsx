@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { overlayFade, slideInFromRight } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -15,13 +16,24 @@ export type AddMovieSidePanelProps = {
   onOpenChange: (open: boolean) => void;
 };
 
-export function AddMovieSidePanel({ open, onOpenChange }: AddMovieSidePanelProps) {
+export function AddMovieSidePanel({
+  open,
+  onOpenChange,
+}: AddMovieSidePanelProps) {
   const [mounted, setMounted] = useState(false);
   const flow = useAddMovieFlow(open);
+  const router = useRouter();
 
   const close = useCallback(() => {
     onOpenChange(false);
   }, [onOpenChange]);
+
+  const handleViewMovie = useCallback(() => {
+    if (!flow.selectedMovie) return;
+
+    close();
+    router.push(`/movies/${flow.selectedMovie.tmdbId}`);
+  }, [flow.selectedMovie, router, close]);
 
   useEffect(() => {
     setMounted(true);
@@ -92,6 +104,7 @@ export function AddMovieSidePanel({ open, onOpenChange }: AddMovieSidePanelProps
               >
                 Add Movie
               </h2>
+
               <Button
                 type="button"
                 variant="ghost"
@@ -120,7 +133,7 @@ export function AddMovieSidePanel({ open, onOpenChange }: AddMovieSidePanelProps
                 onBack={flow.handleBackFromConfirmation}
                 onSave={flow.handleSaveMovie}
                 onAddAnother={flow.handleAddAnother}
-                onViewMovie={close}
+                onViewMovie={handleViewMovie}
               />
             </div>
           </motion.aside>
