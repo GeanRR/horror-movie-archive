@@ -8,7 +8,7 @@ export const ADD_MOVIE_PANEL_STATES = [
 
 export type AddMoviePanelState = (typeof ADD_MOVIE_PANEL_STATES)[number];
 
-/** TMDB search hit — aligned with /api/tmdb/search */
+/** TMDB search hit */
 export type AddMovieSearchResult = {
   tmdbId: number;
   title: string;
@@ -19,16 +19,34 @@ export type AddMovieSearchResult = {
   originalLanguage: string;
 };
 
-/** Confirmation draft — enriched later via TMDB details / OMDb */
+/** Confirmation draft */
 export type AddMovieMovieDraft = {
   tmdbId: number;
+
   displayTitle: string;
   originalTitle: string;
   titlePt: string;
   year: string;
-  director: string;
+  releaseDate: string;
+
   posterPath: string | null;
   posterUrl?: string;
+
+  director: string;
+  country: string;
+  distributor: string;
+  runtime: number | null;
+
+  synopsis: string;
+
+  cast: string[];
+  crew: string[];
+  genres: string[];
+
+  imdbId?: string;
+  imdbScore: number | null;
+  rottenTomatoesScore: number | null;
+
   overview?: string;
   originalLanguage?: string;
 };

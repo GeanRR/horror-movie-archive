@@ -7,6 +7,11 @@ import { ResultsState } from "@/components/add-movie/states/results-state";
 import { SearchingState } from "@/components/add-movie/states/searching-state";
 import { SuccessState } from "@/components/add-movie/states/success-state";
 import type {
+  DuplicateMovieMatch,
+  SaveMovieOptions,
+} from "@/components/add-movie/use-add-movie-flow";
+import type { LibraryMovie } from "@/store/movie-store";
+import type {
   AddMovieFormValues,
   AddMovieMovieDraft,
   AddMoviePanelState,
@@ -23,12 +28,16 @@ export type AddMoviePanelContentProps = {
   searchError: string | null;
   selectedMovie: AddMovieMovieDraft | null;
   formValues: AddMovieFormValues;
+  duplicateMatch: DuplicateMovieMatch | null;
+  bestOfYearReplacement: LibraryMovie | null;
+  saveError: string | null;
   onFormChange: (patch: Partial<AddMovieFormValues>) => void;
   onSelectResult: (result: AddMovieSearchResult) => void;
   onBack: () => void;
-  onSave: () => void;
+  onSave: (options?: SaveMovieOptions) => void;
   onAddAnother: () => void;
   onViewMovie: () => void;
+  onOpenExistingDuplicate: () => void;
 };
 
 export function AddMoviePanelContent({
@@ -41,12 +50,16 @@ export function AddMoviePanelContent({
   searchError,
   selectedMovie,
   formValues,
+  duplicateMatch,
+  bestOfYearReplacement,
+  saveError,
   onFormChange,
   onSelectResult,
   onBack,
   onSave,
   onAddAnother,
   onViewMovie,
+  onOpenExistingDuplicate,
 }: AddMoviePanelContentProps) {
   if (panelState === "success" && selectedMovie) {
     return (
@@ -63,9 +76,13 @@ export function AddMoviePanelContent({
       <ConfirmationState
         movie={selectedMovie}
         formValues={formValues}
+        duplicateMatch={duplicateMatch}
+        bestOfYearReplacement={bestOfYearReplacement}
+        saveError={saveError}
         onFormChange={onFormChange}
         onBack={onBack}
         onSave={onSave}
+        onOpenExistingDuplicate={onOpenExistingDuplicate}
       />
     );
   }

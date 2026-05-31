@@ -8,7 +8,7 @@ import { LibraryListTableHeader } from "@/components/library/library-list-table-
 import { LibraryEmptyState } from "@/components/library/library-empty-state";
 
 type LibraryListTableProps = {
-  rows?: LibraryMovieListRow[];
+  rows?: Array<LibraryMovieListRow & { id?: string; tmdbId?: number }>;
   onAddMovie: () => void;
   className?: string;
 };
@@ -49,7 +49,7 @@ export function LibraryListTable({
                   key={index}
                   className="library-list-row cursor-pointer hover:bg-accent/30 transition-colors"
                   onClick={() => {
-                    const movieId = (row as any).tmdbId;
+                    const movieId = row.id ?? row.tmdbId;
 
                     if (movieId) {
                       router.push(`/movies/${movieId}`);

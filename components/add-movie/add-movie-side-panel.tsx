@@ -29,11 +29,18 @@ export function AddMovieSidePanel({
   }, [onOpenChange]);
 
   const handleViewMovie = useCallback(() => {
-    if (!flow.selectedMovie) return;
+    if (!flow.savedMovieId) return;
 
     close();
-    router.push(`/movies/${flow.selectedMovie.tmdbId}`);
-  }, [flow.selectedMovie, router, close]);
+    router.push(`/movies/${flow.savedMovieId}`);
+  }, [flow.savedMovieId, router, close]);
+
+  const handleOpenExistingDuplicate = useCallback(() => {
+    if (!flow.duplicateMatch) return;
+
+    close();
+    router.push(`/movies/${flow.duplicateMatch.movie.id}`);
+  }, [flow.duplicateMatch, router, close]);
 
   useEffect(() => {
     setMounted(true);
@@ -128,12 +135,16 @@ export function AddMovieSidePanel({
                 searchError={flow.searchError}
                 selectedMovie={flow.selectedMovie}
                 formValues={flow.formValues}
+                duplicateMatch={flow.duplicateMatch}
+                bestOfYearReplacement={flow.bestOfYearReplacement}
+                saveError={flow.saveError}
                 onFormChange={flow.updateFormValues}
                 onSelectResult={flow.handleSelectResult}
                 onBack={flow.handleBackFromConfirmation}
                 onSave={flow.handleSaveMovie}
                 onAddAnother={flow.handleAddAnother}
                 onViewMovie={handleViewMovie}
+                onOpenExistingDuplicate={handleOpenExistingDuplicate}
               />
             </div>
           </motion.aside>

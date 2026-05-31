@@ -1,8 +1,14 @@
 "use client";
 
 import { REVIEW_SCORE_OPTIONS } from "@/lib/add-movie/review-scores";
+import type {
+  DuplicateMovieMatch,
+  SaveMovieOptions,
+} from "@/components/add-movie/use-add-movie-flow";
 import type { AddMovieFormValues, AddMovieMovieDraft } from "@/types/add-movie";
+import type { LibraryMovie } from "@/store/movie-store";
 import { AddMoviePoster } from "@/components/add-movie/add-movie-poster";
+import { DuplicateWarning } from "@/components/add-movie/states/duplicate-warning";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -10,9 +16,13 @@ import { Separator } from "@/components/ui/separator";
 type ConfirmationStateProps = {
   movie: AddMovieMovieDraft;
   formValues: AddMovieFormValues;
+  duplicateMatch: DuplicateMovieMatch | null;
+  bestOfYearReplacement: LibraryMovie | null;
+  saveError: string | null;
   onFormChange: (patch: Partial<AddMovieFormValues>) => void;
   onBack: () => void;
-  onSave: () => void;
+  onSave: (options?: SaveMovieOptions) => void;
+  onOpenExistingDuplicate: () => void;
 };
 
 function MetadataRow({ label, value }: { label: string; value: string }) {
@@ -27,9 +37,13 @@ function MetadataRow({ label, value }: { label: string; value: string }) {
 export function ConfirmationState({
   movie,
   formValues,
+  duplicateMatch,
+  bestOfYearReplacement,
+  saveError,
   onFormChange,
   onBack,
   onSave,
+  onOpenExistingDuplicate,
 }: ConfirmationStateProps) {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-6">
@@ -49,6 +63,10 @@ export function ConfirmationState({
             <MetadataRow label="Title PT" value={movie.titlePt} />
             <MetadataRow label="Year" value={movie.year} />
             <MetadataRow label="Director" value={movie.director} />
+            <MetadataRow
+              label="Runtime"
+              value={movie.runtime ? `${movie.runtime} min` : "-"}
+            />
           </div>
         </div>
       </div>
@@ -87,6 +105,25 @@ export function ConfirmationState({
           <span>Best of Year</span>
         </label>
 
+        {saveError && (
+          <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {saveError}
+          </p>
+        )}
+
+        <DuplicateWarning
+          duplicateMatch={duplicateMatch}
+          bestOfYearReplacement={bestOfYearReplacement}
+          onOpenExistingDuplicate={onOpenExistingDuplicate}
+          onAddAnyway={() => onSave({ allowDuplicate: true })}
+          onConfirmBestOfYearReplacement={() =>
+            onSave({
+              allowDuplicate: true,
+              confirmBestOfYearReplacement: true,
+            })
+          }
+        />
+
         <div className="space-y-2">
           <Label htmlFor="add-movie-watched-date">
             Watched Date{" "}
@@ -106,7 +143,7 @@ export function ConfirmationState({
         <Button type="button" variant="outline" className="flex-1" onClick={onBack}>
           Back
         </Button>
-        <Button type="button" className="flex-1" onClick={onSave}>
+        <Button type="button" className="flex-1" onClick={() => onSave()}>
           Save Movie
         </Button>
       </div>
