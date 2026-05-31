@@ -7,6 +7,7 @@ import {
 } from "@/lib/add-movie/constants";
 import { mapSearchResultToDraft } from "@/lib/add-movie/map-to-draft";
 import { searchMovies } from "@/lib/add-movie/search-client";
+import { useMovieStore } from "@/store";
 import type {
   AddMovieFormValues,
   AddMovieMovieDraft,
@@ -21,6 +22,8 @@ const initialFormValues: AddMovieFormValues = {
 };
 
 export function useAddMovieFlow(open: boolean) {
+  const addMovie = useMovieStore((state) => state.addMovie);
+
   const [panelState, setPanelState] = useState<AddMoviePanelState>("idle");
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<AddMovieSearchResult[]>([]);
@@ -109,8 +112,23 @@ export function useAddMovieFlow(open: boolean) {
   }, []);
 
   const handleSaveMovie = useCallback(() => {
+    if (!selectedMovie) return;
+
+    addMovie({
+      tmdbId: selectedMovie.tmdbId,
+      displayTitle: selectedMovie.displayTitle,
+      originalTitle: selectedMovie.originalTitle,
+      titlePt: selectedMovie.titlePt,
+      year: selectedMovie.year,
+      director: selectedMovie.director,
+      posterUrl: selectedMovie.posterUrl,
+      reviewScore: formValues.reviewScore,
+      bestOfYear: formValues.bestOfYear,
+      watchedDate: formValues.watchedDate,
+    });
+
     setPanelState("success");
-  }, []);
+  }, [selectedMovie, formValues, addMovie]);
 
   const handleAddAnother = useCallback(() => {
     resetFlow();
