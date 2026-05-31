@@ -1,0 +1,210 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ─── Base design tokens (shadcn) ─── */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* ─── Horror Archive (default) ─── */
+:root,
+[data-visual-theme="horror-archive"] {
+  --radius: 0.5rem;
+  --background: oklch(0.12 0.02 285);
+  --foreground: oklch(0.93 0.01 285);
+  --card: oklch(0.16 0.03 285);
+  --card-foreground: oklch(0.93 0.01 285);
+  --popover: oklch(0.14 0.025 285);
+  --popover-foreground: oklch(0.93 0.01 285);
+  --primary: oklch(0.55 0.22 25);
+  --primary-foreground: oklch(0.98 0.01 285);
+  --secondary: oklch(0.22 0.04 285);
+  --secondary-foreground: oklch(0.9 0.01 285);
+  --muted: oklch(0.2 0.03 285);
+  --muted-foreground: oklch(0.65 0.02 285);
+  --accent: oklch(0.28 0.08 25);
+  --accent-foreground: oklch(0.95 0.01 285);
+  --destructive: oklch(0.55 0.24 25);
+  --border: oklch(0.28 0.04 285);
+  --input: oklch(0.22 0.04 285);
+  --ring: oklch(0.55 0.22 25);
+  --sidebar: oklch(0.1 0.02 285);
+  --sidebar-foreground: oklch(0.88 0.01 285);
+  --sidebar-border: oklch(0.24 0.04 285);
+  --sidebar-accent: oklch(0.18 0.05 25);
+  --sidebar-accent-foreground: oklch(0.95 0.01 285);
+  --shell-glow: oklch(0.45 0.18 25 / 0.15);
+}
+
+/* ─── VHS retro ─── */
+[data-visual-theme="vhs"] {
+  --radius: 0.25rem;
+  --background: oklch(0.14 0.04 145);
+  --foreground: oklch(0.88 0.12 95);
+  --card: oklch(0.18 0.05 145);
+  --card-foreground: oklch(0.9 0.1 95);
+  --popover: oklch(0.16 0.045 145);
+  --popover-foreground: oklch(0.9 0.1 95);
+  --primary: oklch(0.72 0.18 95);
+  --primary-foreground: oklch(0.15 0.05 145);
+  --secondary: oklch(0.24 0.06 145);
+  --secondary-foreground: oklch(0.88 0.1 95);
+  --muted: oklch(0.22 0.05 145);
+  --muted-foreground: oklch(0.62 0.08 95);
+  --accent: oklch(0.55 0.2 330);
+  --accent-foreground: oklch(0.95 0.02 95);
+  --destructive: oklch(0.6 0.22 25);
+  --border: oklch(0.32 0.08 145);
+  --input: oklch(0.2 0.05 145);
+  --ring: oklch(0.72 0.18 95);
+  --sidebar: oklch(0.11 0.04 145);
+  --sidebar-foreground: oklch(0.85 0.11 95);
+  --sidebar-border: oklch(0.3 0.07 145);
+  --sidebar-accent: oklch(0.22 0.08 95);
+  --sidebar-accent-foreground: oklch(0.12 0.04 145);
+  --shell-glow: oklch(0.72 0.18 95 / 0.12);
+}
+
+/* ─── Minimal ─── */
+[data-visual-theme="minimal"] {
+  --radius: 0.375rem;
+  --background: oklch(0.11 0 0);
+  --foreground: oklch(0.92 0 0);
+  --card: oklch(0.14 0 0);
+  --card-foreground: oklch(0.92 0 0);
+  --popover: oklch(0.13 0 0);
+  --popover-foreground: oklch(0.92 0 0);
+  --primary: oklch(0.92 0 0);
+  --primary-foreground: oklch(0.11 0 0);
+  --secondary: oklch(0.18 0 0);
+  --secondary-foreground: oklch(0.88 0 0);
+  --muted: oklch(0.17 0 0);
+  --muted-foreground: oklch(0.58 0 0);
+  --accent: oklch(0.22 0 0);
+  --accent-foreground: oklch(0.95 0 0);
+  --destructive: oklch(0.55 0.2 25);
+  --border: oklch(0.24 0 0);
+  --input: oklch(0.18 0 0);
+  --ring: oklch(0.75 0 0);
+  --sidebar: oklch(0.09 0 0);
+  --sidebar-foreground: oklch(0.85 0 0);
+  --sidebar-border: oklch(0.2 0 0);
+  --sidebar-accent: oklch(0.16 0 0);
+  --sidebar-accent-foreground: oklch(0.95 0 0);
+  --shell-glow: oklch(0.5 0 0 / 0.08);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  html {
+    color-scheme: dark;
+  }
+}
+
+@layer utilities {
+  .shell-surface {
+    background: linear-gradient(
+      180deg,
+      var(--shell-glow) 0%,
+      transparent 40%
+    );
+  }
+
+  .library-list-scroll {
+    scrollbar-gutter: stable;
+  }
+
+  .library-list-thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .library-list-th {
+    @apply border-b border-border/70 bg-card/95 px-3 py-3.5 text-center text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground backdrop-blur-md;
+    vertical-align: middle;
+  }
+
+  .library-list-th--sortable {
+    @apply cursor-default select-none transition-colors hover:text-foreground/90;
+  }
+
+  .library-list-td {
+    @apply border-b border-border/30 px-3 py-4 text-center text-sm leading-relaxed text-foreground/90;
+    vertical-align: middle;
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  .library-list-row:hover .library-list-td {
+    @apply bg-accent/10;
+  }
+
+  .library-list-empty-row .library-list-td {
+    @apply border-b-0;
+  }
+
+  .add-movie-panel {
+    box-shadow: -8px 0 32px oklch(0 0 0 / 0.35);
+  }
+
+  .library-empty-glow {
+    background: radial-gradient(
+      ellipse at center,
+      var(--shell-glow) 0%,
+      transparent 70%
+    );
+  }
+
+  .vhs-scanlines::after {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      oklch(0 0 0 / 0.03) 2px,
+      oklch(0 0 0 / 0.03) 4px
+    );
+  }
+}
