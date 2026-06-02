@@ -85,16 +85,24 @@ function compareBySortKey(
   switch (key) {
     case "title":
       return compareStrings(a.displayTitle, b.displayTitle);
+    case "titlePt":
+      return compareStrings(a.titlePt, b.titlePt);
     case "year":
       return compareStrings(a.year, b.year);
+    case "director":
+      return compareStrings(a.director, b.director);
+    case "country":
+      return compareStrings(a.country, b.country);
+    case "distributor":
+      return compareStrings(a.distributor, b.distributor);
+    case "stars":
+      return compareNumbers(a.stars, b.stars);
     case "imdb":
       return compareNumbers(a.imdbScore, b.imdbScore);
     case "rotten":
       return compareNumbers(a.rottenTomatoesScore, b.rottenTomatoesScore);
     case "review":
       return compareNumbers(a.reviewScore, b.reviewScore);
-    case "watchedDate":
-      return compareStrings(a.watchedDate, b.watchedDate);
   }
 }
 
@@ -102,16 +110,24 @@ function isMissingSortValue(movie: LibraryMovie, key: LibrarySortKey): boolean {
   switch (key) {
     case "title":
       return !movie.displayTitle;
+    case "titlePt":
+      return !movie.titlePt;
     case "year":
       return !movie.year;
+    case "director":
+      return !movie.director;
+    case "country":
+      return !movie.country;
+    case "distributor":
+      return !movie.distributor;
+    case "stars":
+      return movie.stars === 0;
     case "imdb":
       return movie.imdbScore === null;
     case "rotten":
       return movie.rottenTomatoesScore === null;
     case "review":
       return movie.reviewScore === null;
-    case "watchedDate":
-      return !movie.watchedDate;
   }
 }
 
@@ -306,11 +322,10 @@ export function LibraryShell() {
 
   return (
     <>
-      <div className="flex min-h-[calc(100dvh-7.5rem)] flex-col">
+      <div className="flex min-h-[calc(100dvh-0rem)] flex-col">
         <LibraryHeader
           viewMode={viewMode}
           onViewModeChange={setViewMode}
-          movieCount={movies.length}
           searchQuery={searchQuery}
           onSearchQueryChange={handleSearchQueryChange}
           isSearchOpen={isSearchOpen}
@@ -329,7 +344,7 @@ export function LibraryShell() {
 
         <div
           ref={scrollRef}
-          className="flex min-h-0 flex-1 flex-col overflow-auto pt-6"
+          className="flex min-h-0 flex-1 flex-col overflow-auto"
         >
           {movies.length > 0 && sortedMovies.length === 0 ? (
             <div className="flex min-h-[360px] items-center justify-center rounded-lg border border-dashed border-border/50 bg-card/10 px-6 text-center">

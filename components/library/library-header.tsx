@@ -28,7 +28,6 @@ import type {
 type LibraryHeaderProps = {
   viewMode: LibraryViewMode;
   onViewModeChange: (mode: LibraryViewMode) => void;
-  movieCount: number;
   searchQuery: string;
   onSearchQueryChange: (query: string) => void;
   isSearchOpen: boolean;
@@ -50,23 +49,24 @@ type LibraryHeaderProps = {
 
 const sortLabels: Record<LibrarySortKey, string> = {
   title: "Title",
+  titlePt: "Title PT",
   year: "Year",
+  director: "Director",
+  country: "Country",
+  distributor: "Distributor",
+  stars: "Stars",
+  review: "Personal Review",
   imdb: "IMDb",
   rotten: "Rotten Tomatoes",
-  review: "Personal Review",
-  watchedDate: "Watched Date",
 };
 
 export function LibraryHeader({
   viewMode,
   onViewModeChange,
-  movieCount,
   searchQuery,
   onSearchQueryChange,
   isSearchOpen,
   onSearchOpenChange,
-  sort,
-  onSortChange,
   isFilterPanelOpen,
   activeFilterCount,
   filters,
@@ -78,96 +78,42 @@ export function LibraryHeader({
 }: LibraryHeaderProps) {
   return (
     <header className="sticky top-0 z-20 shrink-0 border-b border-border/60 bg-background/95 pb-5 backdrop-blur">
-      <div className="flex items-center justify-between gap-6">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-            Horror Movie List
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {movieCount} {movieCount === 1 ? "Movie" : "Movies"}
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <LibrarySearch
-            isOpen={isSearchOpen}
-            onOpenChange={onSearchOpenChange}
-            value={searchQuery}
-            onValueChange={onSearchQueryChange}
-          />
-          <LibraryViewToggle
-            viewMode={viewMode}
-            onViewModeChange={onViewModeChange}
-          />
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button type="button" variant="outline" size="sm">
-                Sort: {sortLabels[sort.key]}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuRadioGroup
-                value={`${sort.key}:${sort.direction}`}
-                onValueChange={(value) => {
-                  const [key, direction] = value.split(":") as [
-                    LibrarySortKey,
-                    LibrarySortDirection,
-                  ];
-                  onSortChange(key, direction);
-                }}
-              >
-                {(
-                  [
-                    "title",
-                    "year",
-                    "imdb",
-                    "rotten",
-                    "review",
-                    "watchedDate",
-                  ] as LibrarySortKey[]
-                ).flatMap((key) => [
-                  <DropdownMenuRadioItem
-                    key={`${key}:asc`}
-                    value={`${key}:asc`}
-                  >
-                    {sortLabels[key]} ascending
-                  </DropdownMenuRadioItem>,
-                  <DropdownMenuRadioItem
-                    key={`${key}:desc`}
-                    value={`${key}:desc`}
-                  >
-                    {sortLabels[key]} descending
-                  </DropdownMenuRadioItem>,
-                ])}
-              </DropdownMenuRadioGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="relative h-9 w-9"
-                onClick={() => onFilterPanelOpenChange(!isFilterPanelOpen)}
-                aria-label="Filters"
-                aria-expanded={isFilterPanelOpen}
-              >
-                <SlidersHorizontal className="h-4 w-4" aria-hidden />
-                {activeFilterCount > 0 && (
-                  <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-400 px-1 text-[10px] font-semibold text-black">
-                    {activeFilterCount}
-                  </span>
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Filters</TooltipContent>
-          </Tooltip>
-          <Button type="button" onClick={onAddMovie} className="gap-2">
-            <Plus className="h-4 w-4" aria-hidden />
-            Add Movie
-          </Button>
-        </div>
+      <div className="flex items-center justify-end gap-2">
+        <LibrarySearch
+          isOpen={isSearchOpen}
+          onOpenChange={onSearchOpenChange}
+          value={searchQuery}
+          onValueChange={onSearchQueryChange}
+        />
+        <LibraryViewToggle
+          viewMode={viewMode}
+          onViewModeChange={onViewModeChange}
+        />
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="relative h-9 w-9"
+              onClick={() => onFilterPanelOpenChange(!isFilterPanelOpen)}
+              aria-label="Filters"
+              aria-expanded={isFilterPanelOpen}
+            >
+              <SlidersHorizontal className="h-4 w-4" aria-hidden />
+              {activeFilterCount > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-400 px-1 text-[10px] font-semibold text-black">
+                  {activeFilterCount}
+                </span>
+              )}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Filters</TooltipContent>
+        </Tooltip>
+        <Button type="button" onClick={onAddMovie} className="gap-2">
+          <Plus className="h-4 w-4" aria-hidden />
+          Add Movie
+        </Button>
       </div>
 
       {isFilterPanelOpen && (

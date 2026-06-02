@@ -5,7 +5,6 @@ import type { ReactNode } from "react";
 import {
   Edit,
   Image as ImageIcon,
-  ListPlus,
   RefreshCcw,
   Trash2,
   X,
@@ -20,6 +19,7 @@ import {
   isMasterpieceScore,
 } from "@/lib/movie-engines/stars-engine";
 import { cn } from "@/lib/utils";
+import { useMovieStore } from "@/store/movie-store";
 import type { LibraryMovie } from "@/store/movie-store";
 
 type MovieDetailsModalProps = {
@@ -90,6 +90,8 @@ function ExpandableNames({
 
 export function MovieDetailsModal({ movie, onClose }: MovieDetailsModalProps) {
   const isMasterpiece = isMasterpieceScore(movie.reviewScore);
+  const removeMovie = useMovieStore((state) => state.removeMovie);
+  const [isDeleteConfirming, setIsDeleteConfirming] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -107,6 +109,11 @@ export function MovieDetailsModal({ movie, onClose }: MovieDetailsModalProps) {
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [onClose]);
+
+  const handleDeleteMovie = () => {
+    removeMovie(movie.id);
+    onClose();
+  };
 
   return (
     <div
@@ -153,10 +160,36 @@ export function MovieDetailsModal({ movie, onClose }: MovieDetailsModalProps) {
               <RefreshCcw className="h-4 w-4" aria-hidden />
               Refresh Metadata
             </Button>
-            <Button type="button" variant="destructive" size="sm" disabled>
-              <Trash2 className="h-4 w-4" aria-hidden />
-              Delete
-            </Button>
+            {!isDeleteConfirming ? (
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                onClick={() => setIsDeleteConfirming(true)}
+              >
+                <Trash2 className="h-4 w-4" aria-hidden />
+                Delete
+              </Button>
+            ) : (
+              <>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleDeleteMovie}
+                >
+                  Confirm
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsDeleteConfirming(false)}
+                >
+                  Cancel
+                </Button>
+              </>
+            )}
             <Button
               type="button"
               variant="ghost"
@@ -222,7 +255,7 @@ export function MovieDetailsModal({ movie, onClose }: MovieDetailsModalProps) {
 
                 {isMasterpiece && (
                   <div className="rounded-lg border border-amber-300/40 bg-amber-300/10 px-4 py-3 text-sm text-amber-100">
-                    10/10 masterpiece
+                    10 masterpiece
                   </div>
                 )}
 
@@ -288,24 +321,6 @@ export function MovieDetailsModal({ movie, onClose }: MovieDetailsModalProps) {
                 <ExpandableNames title="Cast" names={movie.cast} />
                 <ExpandableNames title="Crew" names={movie.crew} />
               </div>
-
-              <Separator className="bg-border/60" />
-
-              <section className="space-y-3">
-                <h3 className="text-sm font-medium uppercase tracking-[0.14em] text-muted-foreground">
-                  Actions
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  <Button type="button" variant="outline" disabled>
-                    <ImageIcon className="h-4 w-4" aria-hidden />
-                    Change Poster
-                  </Button>
-                  <Button type="button" variant="outline" disabled>
-                    <ListPlus className="h-4 w-4" aria-hidden />
-                    Manage Lists
-                  </Button>
-                </div>
-              </section>
             </section>
           </div>
         </div>

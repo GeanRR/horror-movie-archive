@@ -5,7 +5,6 @@ import { cn } from "@/lib/utils";
 import { staggerContainer } from "@/lib/motion";
 import { useThemeStore } from "@/store/theme-store";
 import { Sidebar } from "@/components/layout/sidebar";
-import { TopBar } from "@/components/layout/top-bar";
 
 type AppShellProps = {
   children: React.ReactNode;
@@ -30,7 +29,6 @@ export function AppShell({ children }: AppShellProps) {
         className="relative flex min-w-0 flex-1 flex-col"
         variants={staggerContainer}
       >
-        <TopBar />
         <main className="flex-1 overflow-auto p-6">{children}</main>
       </motion.div>
     </motion.div>
