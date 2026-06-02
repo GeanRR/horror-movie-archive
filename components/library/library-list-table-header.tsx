@@ -1,8 +1,8 @@
 "use client";
 
-import { ArrowUpDown } from "lucide-react";
+import { GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { LIBRARY_LIST_COLUMNS } from "@/lib/library/list-columns";
+import type { LibraryListColumnDef } from "@/lib/library/list-columns";
 import type { LibrarySortKey, LibrarySortState } from "@/types/library";
 
 type LibraryListTableHeaderProps = {
@@ -10,6 +10,10 @@ type LibraryListTableHeaderProps = {
   onSortChange: (key: LibrarySortKey) => void;
   columnWidths: Record<string, string>;
   onResizeStart: (columnId: string, e: React.MouseEvent<HTMLDivElement>) => void;
+  columns: LibraryListColumnDef[];
+  onDragStart: (columnId: string) => void;
+  onDragOver: (e: React.DragEvent, columnId: string) => void;
+  onDrop: (e: React.DragEvent, columnId: string) => void;
 };
 
 export function LibraryListTableHeader({
@@ -17,11 +21,15 @@ export function LibraryListTableHeader({
   onSortChange,
   columnWidths,
   onResizeStart,
+  columns,
+  onDragStart,
+  onDragOver,
+  onDrop,
 }: LibraryListTableHeaderProps) {
   return (
     <thead className="sticky top-0 z-10">
       <tr>
-        {LIBRARY_LIST_COLUMNS.map((column) => (
+        {columns.map((column) => (
           <th
             key={column.id}
             scope="col"
@@ -37,7 +45,17 @@ export function LibraryListTableHeader({
               column.sortable && "library-list-th--sortable"
             )}
             style={{ width: columnWidths[column.id] }}
+            draggable
+            onDragStart={() => onDragStart(column.id)}
+            onDragOver={(e) => onDragOver(e, column.id)}
+            onDrop={(e) => onDrop(e, column.id)}
           >
+            <div
+              className="absolute left-0 top-1/2 -translate-y-1/2 cursor-grab px-1 text-muted-foreground/30 opacity-0 transition-opacity hover:opacity-100 group-hover/th:opacity-60"
+              aria-hidden
+            >
+              <GripVertical className="h-3 w-3" />
+            </div>
             <button
               type="button"
               disabled={!column.sortable || !column.sortKey}
@@ -51,15 +69,21 @@ export function LibraryListTableHeader({
             >
               <span className="truncate">{column.label}</span>
               {column.sortable && (
-                <ArrowUpDown
+                <span
                   className={cn(
-                    "h-3 w-3 shrink-0",
+                    "inline-flex h-3 w-3 shrink-0 items-center justify-center",
                     column.sortKey && sort.key === column.sortKey
                       ? "opacity-90"
                       : "opacity-40"
                   )}
                   aria-hidden
-                />
+                >
+                  {column.sortKey && sort.key === column.sortKey
+                    ? sort.direction === "asc"
+                      ? "\u25B2"
+                      : "\u25BC"
+                    : "\u25B4\u25BE"}
+                </span>
               )}
             </button>
             <div

@@ -5,6 +5,7 @@ import { LibraryListTable } from "@/components/library/library-list-table";
 import { BestOfYearCrown } from "@/components/movie/best-of-year-crown";
 import { MovieBadge } from "@/components/movie/movie-badge";
 import { MovieStars } from "@/components/movie/movie-stars";
+import { abbreviateCountry } from "@/lib/constants/country-abbreviations";
 import { formatReviewScore } from "@/lib/movie-engines/stars-engine";
 import type { LibraryMovie } from "@/store/movie-store";
 import type { LibrarySortKey, LibrarySortState } from "@/types/library";
@@ -48,7 +49,7 @@ export function LibraryListView({
         title: movie.displayTitle,
         titlePt: movie.titlePt,
         director: movie.director,
-        country: movie.country,
+        country: abbreviateCountry(movie.country),
         distributor: movie.distributor,
         badge: <MovieBadge badgeId={movie.badgeId} />,
         stars: <MovieStars stars={movie.stars} />,

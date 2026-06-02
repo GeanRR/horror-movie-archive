@@ -5,6 +5,7 @@ import { BestOfYearCrown } from "@/components/movie/best-of-year-crown";
 import { MovieBadge } from "@/components/movie/movie-badge";
 import { MovieStars } from "@/components/movie/movie-stars";
 import { isMasterpieceScore } from "@/lib/movie-engines/stars-engine";
+import { abbreviateCountry } from "@/lib/constants/country-abbreviations";
 import { cn } from "@/lib/utils";
 import type { LibraryMovie } from "@/store/movie-store";
 
@@ -84,7 +85,7 @@ export function LibraryGridView({
 
               <div className="flex min-h-7 flex-wrap items-center gap-1.5">
                 <span className="text-xs text-muted-foreground">
-                  {movie.year}
+                  {abbreviateCountry(movie.country)} &middot; {movie.year}
                 </span>
                 <BestOfYearCrown active={movie.bestOfYear} />
               </div>

@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { EditMovieModal } from "@/components/movie/edit-movie-modal";
 import { ChangePosterModal } from "@/components/movie/change-poster-modal";
+import { abbreviateCountry } from "@/lib/constants/country-abbreviations";
 import { fetchMovieDetails } from "@/lib/add-movie/fetch-movie-details";
 import {
   formatReviewScore,
@@ -135,6 +136,7 @@ export function MovieDetailsModal({ movie, onClose }: MovieDetailsModalProps) {
 
       updateMovie(movie.id, {
         posterUrl: movie.posterUrl,
+        titlePt: details.titlePt,
         director: details.director,
         country: details.country,
         distributor: details.distributor ?? "-",
@@ -375,7 +377,7 @@ export function MovieDetailsModal({ movie, onClose }: MovieDetailsModalProps) {
 
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                   <MetadataItem label="Director" value={movie.director} />
-                  <MetadataItem label="Country" value={movie.country} />
+                  <MetadataItem label="Country" value={abbreviateCountry(movie.country)} />
                   <MetadataItem label="Distributor" value={movie.distributor} />
                   <MetadataItem
                     label="Runtime"

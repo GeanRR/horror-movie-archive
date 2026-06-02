@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { X } from "lucide-react";
-import { MOVIE_BADGES } from "@/lib/movie-engines/badge-engine";
 import { calculateBadgeId } from "@/lib/movie-engines/badge-engine";
 import { calculateStars } from "@/lib/movie-engines/stars-engine";
 import { REVIEW_SCORE_OPTIONS } from "@/lib/add-movie/review-scores";
+import { BadgeGridPicker } from "@/components/movie/badge-grid-picker";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useMovieStore } from "@/store/movie-store";
@@ -153,19 +153,10 @@ export function EditMovieModal({ movie, onClose }: EditMovieModalProps) {
                   (optional override)
                 </span>
               </Label>
-              <select
-                id="edit-badge-override"
+              <BadgeGridPicker
                 value={badgeOverride}
-                onChange={(e) => setBadgeOverride(e.target.value)}
-                className="h-10 w-full rounded-md border border-input bg-background/80 px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <option value="">Automatic (default)</option>
-                {MOVIE_BADGES.map((badge) => (
-                  <option key={badge.id} value={badge.id}>
-                    {badge.label}
-                  </option>
-                ))}
-              </select>
+                onChange={setBadgeOverride}
+              />
             </div>
 
             <label className="flex cursor-pointer items-center gap-2.5 text-sm">

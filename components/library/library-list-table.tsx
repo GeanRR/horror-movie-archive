@@ -7,10 +7,12 @@ import {
   type LibraryMovieListRow,
 } from "@/lib/library/list-columns";
 import {
-  DEFAULT_COLUMN_WIDTHS,
   getColumnWidths,
   setColumnWidth,
-} from "@/lib/library/column-widths";
+  getColumnOrder,
+  setColumnOrder,
+  type ColumnId,
+} from "@/lib/library/column-state";
 import { LibraryListTableHeader } from "@/components/library/library-list-table-header";
 import { LibraryEmptyState } from "@/components/library/library-empty-state";
 import type { LibrarySortKey, LibrarySortState } from "@/types/library";
@@ -35,18 +37,27 @@ export function LibraryListTable({
   className,
 }: LibraryListTableProps) {
   const isEmpty = rows.length === 0;
-  const columnCount = LIBRARY_LIST_COLUMNS.length;
   const [columnWidths, setColumnWidthsState] =
-    useState<Record<string, string>>(DEFAULT_COLUMN_WIDTHS);
+    useState<Record<string, string>>({});
+  const [columnOrder, setColumnOrderState] = useState<ColumnId[]>([]);
   const widthsRef = useRef(columnWidths);
+  const dragColumnRef = useRef<string | null>(null);
+  const dragOverColumnRef = useRef<string | null>(null);
 
   useEffect(() => {
     setColumnWidthsState(getColumnWidths());
+    setColumnOrderState(getColumnOrder());
   }, []);
 
   useEffect(() => {
     widthsRef.current = columnWidths;
   }, [columnWidths]);
+
+  const orderedColumns = columnOrder
+    .map((id) => LIBRARY_LIST_COLUMNS.find((col) => col.id === id))
+    .filter(Boolean);
+
+  const visibleColumns = orderedColumns as typeof LIBRARY_LIST_COLUMNS;
 
   const handleResizeStart = useCallback(
     (columnId: string, e: React.MouseEvent<HTMLDivElement>) => {
@@ -88,6 +99,44 @@ export function LibraryListTable({
     []
   );
 
+  const handleDragStart = useCallback(
+    (columnId: string) => {
+      dragColumnRef.current = columnId;
+    },
+    []
+  );
+
+  const handleDragOver = useCallback(
+    (e: React.DragEvent, columnId: string) => {
+      e.preventDefault();
+      dragOverColumnRef.current = columnId;
+    },
+    []
+  );
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent, targetColumnId: string) => {
+      e.preventDefault();
+      const sourceId = dragColumnRef.current;
+      if (!sourceId || sourceId === targetColumnId) return;
+
+      setColumnOrderState((prev) => {
+        const newOrder = [...prev];
+        const sourceIndex = newOrder.indexOf(sourceId as ColumnId);
+        const targetIndex = newOrder.indexOf(targetColumnId as ColumnId);
+        if (sourceIndex === -1 || targetIndex === -1) return prev;
+        newOrder.splice(sourceIndex, 1);
+        newOrder.splice(targetIndex, 0, sourceId as ColumnId);
+        setColumnOrder(newOrder);
+        return newOrder;
+      });
+
+      dragColumnRef.current = null;
+      dragOverColumnRef.current = null;
+    },
+    []
+  );
+
   return (
     <div
       className={cn(
@@ -97,7 +146,7 @@ export function LibraryListTable({
     >
       <table className="library-list-table__table w-full min-w-[1280px] border-collapse">
         <colgroup>
-          {LIBRARY_LIST_COLUMNS.map((col) => (
+          {visibleColumns.map((col) => (
             <col
               key={col.id}
               style={{ width: columnWidths[col.id] ?? col.minWidth }}
@@ -109,11 +158,18 @@ export function LibraryListTable({
           onSortChange={onSortChange}
           columnWidths={columnWidths}
           onResizeStart={handleResizeStart}
+          columns={visibleColumns}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
         />
         <tbody>
           {isEmpty ? (
             <tr className="library-list-empty-row">
-              <td colSpan={columnCount} className="p-0 align-top">
+              <td
+                colSpan={visibleColumns.length}
+                className="p-0 align-top"
+              >
                 <LibraryEmptyState
                   variant="embedded"
                   onAddFirstMovie={onAddMovie}
@@ -132,7 +188,7 @@ export function LibraryListTable({
                   }
                 }}
               >
-                {LIBRARY_LIST_COLUMNS.map((column) => (
+                {visibleColumns.map((column) => (
                   <td key={column.id} className="library-list-td truncate">
                     {row[column.id] ?? null}
                   </td>

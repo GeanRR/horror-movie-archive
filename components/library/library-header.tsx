@@ -77,7 +77,7 @@ export function LibraryHeader({
   onAddMovie,
 }: LibraryHeaderProps) {
   return (
-    <header className="sticky top-0 z-30 shrink-0 border-b border-border/60 bg-background pb-5">
+    <header className="sticky top-0 z-30 shrink-0 border-b border-border/60 bg-background">
       <div className="flex items-center justify-end gap-2">
         <LibrarySearch
           isOpen={isSearchOpen}

@@ -1,6 +1,5 @@
 "use client";
 
-import { MOVIE_BADGES } from "@/lib/movie-engines/badge-engine";
 import { REVIEW_SCORE_OPTIONS } from "@/lib/add-movie/review-scores";
 import type {
   DuplicateMovieMatch,
@@ -9,6 +8,7 @@ import type {
 import type { AddMovieFormValues, AddMovieMovieDraft } from "@/types/add-movie";
 import type { LibraryMovie } from "@/store/movie-store";
 import { AddMoviePoster } from "@/components/add-movie/add-movie-poster";
+import { BadgeGridPicker } from "@/components/movie/badge-grid-picker";
 import { DuplicateWarning } from "@/components/add-movie/states/duplicate-warning";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -103,19 +103,10 @@ export function ConfirmationState({
               (optional override)
             </span>
           </Label>
-          <select
-            id="add-movie-badge-override"
+          <BadgeGridPicker
             value={formValues.badgeOverride}
-            onChange={(e) => onFormChange({ badgeOverride: e.target.value })}
-            className="h-10 w-full rounded-md border border-input bg-background/80 px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <option value="">Automatic (default)</option>
-            {MOVIE_BADGES.map((badge) => (
-              <option key={badge.id} value={badge.id}>
-                {badge.label}
-              </option>
-            ))}
-          </select>
+            onChange={(value) => onFormChange({ badgeOverride: value })}
+          />
         </div>
 
         <label className="flex cursor-pointer items-center gap-2.5 text-sm">

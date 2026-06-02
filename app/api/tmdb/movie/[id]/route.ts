@@ -34,11 +34,16 @@ export async function GET(
       `${TMDB_API_BASE}/movie/${id}/external_ids` +
       `?api_key=${apiKey}`;
 
-    const [detailsResponse, creditsResponse, externalIdsResponse] =
+    const translationsUrl =
+      `${TMDB_API_BASE}/movie/${id}/translations` +
+      `?api_key=${apiKey}`;
+
+    const [detailsResponse, creditsResponse, externalIdsResponse, translationsResponse] =
       await Promise.all([
         fetch(detailsUrl, { next: { revalidate: 0 } }),
         fetch(creditsUrl, { next: { revalidate: 0 } }),
         fetch(externalIdsUrl, { next: { revalidate: 0 } }),
+        fetch(translationsUrl, { next: { revalidate: 0 } }),
       ]);
 
     if (
@@ -58,6 +63,18 @@ export async function GET(
     const details = await detailsResponse.json();
     const credits = await creditsResponse.json();
     const externalIds = await externalIdsResponse.json();
+
+    let titlePt = details.title;
+    try {
+      const translations = await translationsResponse.json();
+      const ptBrTranslation = translations.translations?.find(
+        (t: { iso_639_1: string; iso_3166_1: string }) =>
+          t.iso_639_1 === "pt" && t.iso_3166_1 === "BR"
+      );
+      if (ptBrTranslation?.data?.title) {
+        titlePt = ptBrTranslation.data.title;
+      }
+    } catch {} // fallback to default title
 
     const director =
       credits.crew?.find(
@@ -85,7 +102,7 @@ export async function GET(
 
         title: details.title,
         originalTitle: details.original_title,
-        titlePt: details.title,
+        titlePt,
 
         year: details.release_date?.slice(0, 4) ?? "",
         releaseDate: details.release_date ?? "",
