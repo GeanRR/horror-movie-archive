@@ -4,11 +4,15 @@ export type LibraryViewMode = (typeof LIBRARY_VIEW_MODES)[number];
 
 export const LIBRARY_SORT_KEYS = [
   "title",
+  "titlePt",
   "year",
+  "director",
+  "country",
+  "distributor",
+  "stars",
+  "review",
   "imdb",
   "rotten",
-  "review",
-  "watchedDate",
 ] as const;
 
 export type LibrarySortKey = (typeof LIBRARY_SORT_KEYS)[number];
