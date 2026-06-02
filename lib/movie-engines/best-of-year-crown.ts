@@ -1,33 +1,33 @@
 export type CrownableMovie = {
   id: string;
-  watchedDate: string;
+  year: string;
   bestOfYear: boolean;
   reviewScore?: number | null;
   createdAt?: string;
 };
 
-export function getWatchedYear(
-  watchedDate: string | null | undefined
+export function getReleaseYear(
+  year: string | null | undefined
 ): string {
-  const match = String(watchedDate ?? "").match(/^(\d{4})-\d{2}-\d{2}/);
+  const match = String(year ?? "").match(/^(\d{4})/);
   return match?.[1] ?? "";
 }
 
-export function findBestOfYearWinnerForWatchedYear<T extends CrownableMovie>(
+export function findBestOfYearWinnerForReleaseYear<T extends CrownableMovie>(
   movies: T[],
-  watchedDate: string | null | undefined,
+  year: string | null | undefined,
   ignoredMovieId?: string
 ): T | null {
-  const watchedYear = getWatchedYear(watchedDate);
+  const releaseYear = getReleaseYear(year);
 
-  if (!watchedYear) return null;
+  if (!releaseYear) return null;
 
   return (
     movies.find(
       (movie) =>
         movie.id !== ignoredMovieId &&
         movie.bestOfYear &&
-        getWatchedYear(movie.watchedDate) === watchedYear
+        getReleaseYear(movie.year) === releaseYear
     ) ?? null
   );
 }
@@ -36,9 +36,9 @@ export function enforceBestOfYearCrown<T extends CrownableMovie>(
   movies: T[],
   crownedMovie: T
 ): T[] {
-  const watchedYear = getWatchedYear(crownedMovie.watchedDate);
+  const releaseYear = getReleaseYear(crownedMovie.year);
 
-  if (!crownedMovie.bestOfYear || !watchedYear) {
+  if (!crownedMovie.bestOfYear || !releaseYear) {
     return movies.map((movie) =>
       movie.id === crownedMovie.id && movie.bestOfYear
         ? ({ ...movie, bestOfYear: false } as T)
@@ -48,9 +48,9 @@ export function enforceBestOfYearCrown<T extends CrownableMovie>(
 
   return movies.map((movie) => {
     const isSameMovie = movie.id === crownedMovie.id;
-    const isSameWatchedYear = getWatchedYear(movie.watchedDate) === watchedYear;
+    const isSameReleaseYear = getReleaseYear(movie.year) === releaseYear;
 
-    if (!isSameMovie && isSameWatchedYear && movie.bestOfYear) {
+    if (!isSameMovie && isSameReleaseYear && movie.bestOfYear) {
       return { ...movie, bestOfYear: false } as T;
     }
 
@@ -64,19 +64,19 @@ export function dedupeBestOfYearCrowns<T extends CrownableMovie>(
   const crownedYears = new Set<string>();
 
   return movies.map((movie) => {
-    const watchedYear = getWatchedYear(movie.watchedDate);
+    const releaseYear = getReleaseYear(movie.year);
 
-    if (!movie.bestOfYear || !watchedYear) {
+    if (!movie.bestOfYear || !releaseYear) {
       return movie.bestOfYear
         ? ({ ...movie, bestOfYear: false } as T)
         : movie;
     }
 
-    if (crownedYears.has(watchedYear)) {
+    if (crownedYears.has(releaseYear)) {
       return { ...movie, bestOfYear: false } as T;
     }
 
-    crownedYears.add(watchedYear);
+    crownedYears.add(releaseYear);
     return movie;
   });
 }
@@ -85,11 +85,11 @@ export function getBestOfYearWinners<T extends CrownableMovie>(
   movies: T[]
 ): T[] {
   return movies
-    .filter((movie) => movie.bestOfYear && getWatchedYear(movie.watchedDate))
+    .filter((movie) => movie.bestOfYear && getReleaseYear(movie.year))
     .sort((a, b) => {
       const yearDiff =
-        Number(getWatchedYear(b.watchedDate)) -
-        Number(getWatchedYear(a.watchedDate));
+        Number(getReleaseYear(b.year)) -
+        Number(getReleaseYear(a.year));
 
       if (yearDiff !== 0) return yearDiff;
 
