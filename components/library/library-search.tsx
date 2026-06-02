@@ -14,9 +14,16 @@ import {
 type LibrarySearchProps = {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
+  value: string;
+  onValueChange: (value: string) => void;
 };
 
-export function LibrarySearch({ isOpen, onOpenChange }: LibrarySearchProps) {
+export function LibrarySearch({
+  isOpen,
+  onOpenChange,
+  value,
+  onValueChange,
+}: LibrarySearchProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -39,7 +46,9 @@ export function LibrarySearch({ isOpen, onOpenChange }: LibrarySearchProps) {
             <input
               ref={inputRef}
               type="search"
-              placeholder="Search archive…"
+              value={value}
+              onChange={(event) => onValueChange(event.target.value)}
+              placeholder="Search archive..."
               aria-label="Search movies"
               className={cn(
                 "h-9 w-[280px] rounded-md border border-input bg-background/80 px-3 text-sm",

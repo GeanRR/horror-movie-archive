@@ -1,25 +1,27 @@
-"use client";
-
-import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { LIBRARY_LIST_COLUMNS } from "@/lib/library/list-columns";
 import type { LibraryMovieListRow } from "@/lib/library/list-columns";
 import { LibraryListTableHeader } from "@/components/library/library-list-table-header";
 import { LibraryEmptyState } from "@/components/library/library-empty-state";
+import type { LibrarySortKey, LibrarySortState } from "@/types/library";
 
 type LibraryListTableProps = {
   rows?: Array<LibraryMovieListRow & { id?: string; tmdbId?: number }>;
   onAddMovie: () => void;
+  onOpenMovie: (id: string) => void;
+  sort: LibrarySortState;
+  onSortChange: (key: LibrarySortKey) => void;
   className?: string;
 };
 
 export function LibraryListTable({
   rows = [],
   onAddMovie,
+  onOpenMovie,
+  sort,
+  onSortChange,
   className,
 }: LibraryListTableProps) {
-  const router = useRouter();
-
   const isEmpty = rows.length === 0;
   const columnCount = LIBRARY_LIST_COLUMNS.length;
 
@@ -32,7 +34,7 @@ export function LibraryListTable({
     >
       <div className="library-list-scroll min-h-0 flex-1 overflow-auto">
         <table className="library-list-table__table w-full min-w-[1280px] border-collapse">
-          <LibraryListTableHeader />
+          <LibraryListTableHeader sort={sort} onSortChange={onSortChange} />
           <tbody>
             {isEmpty ? (
               <tr className="library-list-empty-row">
@@ -49,10 +51,10 @@ export function LibraryListTable({
                   key={index}
                   className="library-list-row cursor-pointer hover:bg-accent/30 transition-colors"
                   onClick={() => {
-                    const movieId = row.id ?? row.tmdbId;
+                    const movieId = row.id ?? String(row.tmdbId ?? "");
 
                     if (movieId) {
-                      router.push(`/movies/${movieId}`);
+                      onOpenMovie(movieId);
                     }
                   }}
                 >

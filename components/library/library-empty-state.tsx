@@ -49,7 +49,7 @@ export function LibraryEmptyState({
           <Film className="h-6 w-6 text-primary/80" aria-hidden />
         </div>
         <h2 className="text-xl font-semibold tracking-tight text-foreground">
-          Horror Archive is Empty
+          Add your first movie
         </h2>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
           Add your first movie to begin building your archive.
@@ -60,7 +60,7 @@ export function LibraryEmptyState({
           className="mt-8 min-w-[180px]"
           onClick={onAddFirstMovie}
         >
-          Add First Movie
+          Add Movie
         </Button>
       </div>
     </motion.div>

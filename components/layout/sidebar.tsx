@@ -12,6 +12,7 @@ import {
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { fadeIn, slideInFromLeft } from "@/lib/motion";
+import { useMovieStore } from "@/store/movie-store";
 import { Separator } from "@/components/ui/separator";
 
 const navItems = [
@@ -23,6 +24,8 @@ const navItems = [
 ] as const;
 
 export function Sidebar() {
+  const movieCount = useMovieStore((state) => state.movies.length);
+
   return (
     <motion.aside
       variants={slideInFromLeft}
@@ -39,6 +42,9 @@ export function Sidebar() {
             Private Archive
           </p>
           <h1 className="text-sm font-semibold leading-tight">Horror Movie</h1>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {movieCount} {movieCount === 1 ? "Movie" : "Movies"}
+          </p>
         </motion.div>
       </div>
 

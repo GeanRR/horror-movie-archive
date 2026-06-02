@@ -6,16 +6,24 @@ import { BestOfYearCrown } from "@/components/movie/best-of-year-crown";
 import { MovieBadge } from "@/components/movie/movie-badge";
 import { MovieStars } from "@/components/movie/movie-stars";
 import { formatReviewScore } from "@/lib/movie-engines/stars-engine";
-import { useMovieStore } from "@/store";
+import type { LibraryMovie } from "@/store/movie-store";
+import type { LibrarySortKey, LibrarySortState } from "@/types/library";
 
 type LibraryListViewProps = {
+  movies: LibraryMovie[];
   onAddMovie: () => void;
+  onOpenMovie: (id: string) => void;
+  sort: LibrarySortState;
+  onSortChange: (key: LibrarySortKey) => void;
 };
 
-/** Primary Library experience - archive list table */
-export function LibraryListView({ onAddMovie }: LibraryListViewProps) {
-  const movies = useMovieStore((state) => state.movies);
-
+export function LibraryListView({
+  movies,
+  onAddMovie,
+  onOpenMovie,
+  sort,
+  onSortChange,
+}: LibraryListViewProps) {
   const rows = useMemo(
     () =>
       movies.map((movie) => ({
@@ -38,30 +46,16 @@ export function LibraryListView({ onAddMovie }: LibraryListViewProps) {
         ),
 
         title: movie.displayTitle,
-
         titlePt: movie.titlePt,
-
         director: movie.director,
-
         country: movie.country,
-
         distributor: movie.distributor,
-
         badge: <MovieBadge badgeId={movie.badgeId} />,
-
         stars: <MovieStars stars={movie.stars} />,
-
         review: formatReviewScore(movie.reviewScore),
-
-        imdb:
-          movie.imdbScore !== null &&
-          movie.imdbScore !== undefined
-            ? movie.imdbScore
-            : "-",
-
+        imdb: movie.imdbScore !== null ? movie.imdbScore : "-",
         rotten:
-          movie.rottenTomatoesScore !== null &&
-          movie.rottenTomatoesScore !== undefined
+          movie.rottenTomatoesScore !== null
             ? `${movie.rottenTomatoesScore}%`
             : "-",
       })),
@@ -73,6 +67,9 @@ export function LibraryListView({ onAddMovie }: LibraryListViewProps) {
       <LibraryListTable
         rows={rows}
         onAddMovie={onAddMovie}
+        onOpenMovie={onOpenMovie}
+        sort={sort}
+        onSortChange={onSortChange}
       />
     </div>
   );
