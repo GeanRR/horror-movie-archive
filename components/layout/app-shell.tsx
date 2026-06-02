@@ -26,10 +26,10 @@ export function AppShell({ children }: AppShellProps) {
       <div className="shell-surface pointer-events-none absolute inset-0" />
       <Sidebar />
       <motion.div
-        className="relative flex min-w-0 flex-1 flex-col overflow-hidden"
+        className="relative flex min-w-0 flex-1 flex-col"
         variants={staggerContainer}
       >
-        <main className="flex-1 overflow-auto">{children}</main>
+        <main className="flex-1 overflow-auto p-6">{children}</main>
       </motion.div>
     </motion.div>
   );
