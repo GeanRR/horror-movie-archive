@@ -47,5 +47,5 @@ export function formatReviewScore(
 
   return `${Number.isInteger(reviewScore)
     ? reviewScore
-    : reviewScore.toFixed(1)}/${MAX_REVIEW_SCORE}`;
+    : reviewScore.toFixed(1)}`;
 }
