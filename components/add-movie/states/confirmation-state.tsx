@@ -1,5 +1,6 @@
 "use client";
 
+import { MOVIE_BADGES } from "@/lib/movie-engines/badge-engine";
 import { REVIEW_SCORE_OPTIONS } from "@/lib/add-movie/review-scores";
 import type {
   DuplicateMovieMatch,
@@ -90,6 +91,28 @@ export function ConfirmationState({
             {REVIEW_SCORE_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="add-movie-badge-override">
+            Badge{" "}
+            <span className="font-normal text-muted-foreground">
+              (optional override)
+            </span>
+          </Label>
+          <select
+            id="add-movie-badge-override"
+            value={formValues.badgeOverride}
+            onChange={(e) => onFormChange({ badgeOverride: e.target.value })}
+            className="h-10 w-full rounded-md border border-input bg-background/80 px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <option value="">Automatic (default)</option>
+            {MOVIE_BADGES.map((badge) => (
+              <option key={badge.id} value={badge.id}>
+                {badge.label}
               </option>
             ))}
           </select>

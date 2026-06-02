@@ -63,14 +63,12 @@ export function LibraryListView({
   );
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <LibraryListTable
-        rows={rows}
-        onAddMovie={onAddMovie}
-        onOpenMovie={onOpenMovie}
-        sort={sort}
-        onSortChange={onSortChange}
-      />
-    </div>
+    <LibraryListTable
+      rows={rows}
+      onAddMovie={onAddMovie}
+      onOpenMovie={onOpenMovie}
+      sort={sort}
+      onSortChange={onSortChange}
+    />
   );
 }

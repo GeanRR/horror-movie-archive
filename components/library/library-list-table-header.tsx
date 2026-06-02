@@ -8,14 +8,18 @@ import type { LibrarySortKey, LibrarySortState } from "@/types/library";
 type LibraryListTableHeaderProps = {
   sort: LibrarySortState;
   onSortChange: (key: LibrarySortKey) => void;
+  columnWidths: Record<string, string>;
+  onResizeStart: (columnId: string, e: React.MouseEvent<HTMLDivElement>) => void;
 };
 
 export function LibraryListTableHeader({
   sort,
   onSortChange,
+  columnWidths,
+  onResizeStart,
 }: LibraryListTableHeaderProps) {
   return (
-    <thead className="library-list-thead">
+    <thead className="sticky top-0 z-10">
       <tr>
         {LIBRARY_LIST_COLUMNS.map((column) => (
           <th
@@ -29,23 +33,23 @@ export function LibraryListTableHeader({
                 : "none"
             }
             className={cn(
-              "library-list-th",
-              column.minWidth,
+              "library-list-th relative",
               column.sortable && "library-list-th--sortable"
             )}
+            style={{ width: columnWidths[column.id] }}
           >
             <button
               type="button"
               disabled={!column.sortable || !column.sortKey}
               onClick={() => column.sortKey && onSortChange(column.sortKey)}
               className={cn(
-                "inline-flex items-center justify-center gap-1.5",
+                "inline-flex w-full items-center justify-start gap-1.5 px-2 py-2",
                 column.sortable &&
                   "cursor-pointer rounded-sm transition-colors hover:text-foreground",
                 !column.sortable && "cursor-default"
               )}
             >
-              <span>{column.label}</span>
+              <span className="truncate">{column.label}</span>
               {column.sortable && (
                 <ArrowUpDown
                   className={cn(
@@ -58,6 +62,12 @@ export function LibraryListTableHeader({
                 />
               )}
             </button>
+            <div
+              className="absolute right-0 top-0 z-20 h-full w-1.5 cursor-col-resize hover:bg-primary/30 active:bg-primary/50"
+              onMouseDown={(e) => onResizeStart(column.id, e)}
+            >
+              <div className="mx-auto h-full w-px bg-border/40" />
+            </div>
           </th>
         ))}
       </tr>

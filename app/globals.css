@@ -152,14 +152,8 @@
     scrollbar-gutter: stable;
   }
 
-  .library-list-thead {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-  }
-
   .library-list-th {
-    @apply border-b border-border/70 bg-card/95 px-3 py-3.5 text-center text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground backdrop-blur-md;
+    @apply border-b border-border/70 bg-card px-3 py-3.5 text-center text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground;
     vertical-align: middle;
   }
 

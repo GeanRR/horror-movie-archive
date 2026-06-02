@@ -9,7 +9,7 @@ import { fetchMovieDetails } from "@/lib/add-movie/fetch-movie-details";
 import { mapSearchResultToDraft } from "@/lib/add-movie/map-to-draft";
 import { searchMovies } from "@/lib/add-movie/search-client";
 import { calculateBadgeId } from "@/lib/movie-engines/badge-engine";
-import { findBestOfYearWinnerForWatchedYear } from "@/lib/movie-engines/best-of-year-crown";
+import { findBestOfYearWinnerForReleaseYear } from "@/lib/movie-engines/best-of-year-crown";
 import { calculateStars } from "@/lib/movie-engines/stars-engine";
 import { useMovieStore } from "@/store";
 import type { LibraryMovie } from "@/store/movie-store";
@@ -34,6 +34,7 @@ const initialFormValues: AddMovieFormValues = {
   reviewScore: "",
   bestOfYear: false,
   watchedDate: "",
+  badgeOverride: "",
 };
 
 function createMovieId(tmdbId: number): string {
@@ -239,11 +240,6 @@ export function useAddMovieFlow(open: boolean) {
 
       setSaveError(null);
 
-      if (formValues.bestOfYear && !formValues.watchedDate) {
-        setSaveError("Best of Year requires a watched date.");
-        return;
-      }
-
       const duplicate = findDuplicateMovie(selectedMovie, movies);
       if (duplicate && !options.allowDuplicate) {
         setDuplicateMatch(duplicate);
@@ -254,9 +250,9 @@ export function useAddMovieFlow(open: boolean) {
       }
 
       if (formValues.bestOfYear) {
-        const replacement = findBestOfYearWinnerForWatchedYear(
+        const replacement = findBestOfYearWinnerForReleaseYear(
           movies,
-          formValues.watchedDate
+          selectedMovie.year
         );
 
         if (replacement && !options.confirmBestOfYearReplacement) {
@@ -269,7 +265,10 @@ export function useAddMovieFlow(open: boolean) {
         ? Number(formValues.reviewScore)
         : null;
       const stars = calculateStars(reviewScore);
-      const badgeId = calculateBadgeId(reviewScore);
+      const badgeOverrideEnabled = formValues.badgeOverride !== "";
+      const badgeId = badgeOverrideEnabled
+        ? formValues.badgeOverride
+        : calculateBadgeId(reviewScore);
       const now = new Date().toISOString();
       const movieId = createMovieId(selectedMovie.tmdbId);
 
@@ -303,7 +302,7 @@ export function useAddMovieFlow(open: boolean) {
         reviewScore,
         stars,
         badgeId,
-        badgeOverrideEnabled: false,
+        badgeOverrideEnabled,
 
         watchedDate: formValues.watchedDate,
         bestOfYear: formValues.bestOfYear,

@@ -55,4 +55,5 @@ export type AddMovieFormValues = {
   reviewScore: string;
   bestOfYear: boolean;
   watchedDate: string;
+  badgeOverride: string;
 };

@@ -57,7 +57,7 @@ export function DuplicateWarning({
         </p>
         <p className="mt-1 text-amber-100/80">
           {bestOfYearReplacement.displayTitle} is already marked Best of Year
-          for this watched year.
+          for this release year.
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
           <Button
