@@ -34,7 +34,7 @@ export function MovieBadge({ badgeId, className }: MovieBadgeProps) {
       <img
         src={badge.assetPath}
         alt={badge.id}
-        className="h-9 max-w-[5.5rem] object-contain"
+        className="h-36 w-auto max-w-[11rem] object-contain"
       />
     </span>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { Crown } from "lucide-react";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 type BestOfYearCrownProps = {
@@ -19,14 +19,25 @@ export function BestOfYearCrown({
   return (
     <span
       className={cn(
-        "inline-flex items-center justify-center gap-1 rounded-md border border-amber-400/40 bg-amber-400/10 px-1.5 py-1 text-amber-200",
+        "inline-flex items-center justify-center",
         className
       )}
       title="Best of Year"
       aria-label="Best of Year"
     >
-      <Crown className="h-3.5 w-3.5" aria-hidden />
-      {showLabel && <span className="text-xs font-medium">Best of Year</span>}
+      <Image
+        src="/images/skull.png"
+        alt="Best of Year"
+        width={20}
+        height={20}
+        className="object-contain"
+        style={{ filter: 'drop-shadow(0 0 4px rgba(232, 185, 62, 0.6))' }}
+      />
+      {showLabel && (
+        <span className="ml-1.5 text-xs font-medium text-[#E0B63E]">
+          Best of Year
+        </span>
+      )}
     </span>
   );
 }

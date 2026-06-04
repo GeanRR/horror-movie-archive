@@ -20,7 +20,7 @@ export function LibraryViewToggle({
 }: LibraryViewToggleProps) {
   return (
     <div
-      className="inline-flex items-center rounded-md border border-border bg-card/50 p-0.5"
+      className="inline-flex items-center rounded-md border border-border/60 p-0.5"
       role="group"
       aria-label="View mode"
     >

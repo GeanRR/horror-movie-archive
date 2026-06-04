@@ -40,6 +40,7 @@ export function LibraryListTable({
   const [columnWidths, setColumnWidthsState] =
     useState<Record<string, string>>({});
   const [columnOrder, setColumnOrderState] = useState<ColumnId[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
   const widthsRef = useRef(columnWidths);
   const dragColumnRef = useRef<string | null>(null);
   const dragOverColumnRef = useRef<string | null>(null);
@@ -102,6 +103,7 @@ export function LibraryListTable({
   const handleDragStart = useCallback(
     (columnId: string) => {
       dragColumnRef.current = columnId;
+      setIsDragging(true);
     },
     []
   );
@@ -109,16 +111,26 @@ export function LibraryListTable({
   const handleDragOver = useCallback(
     (e: React.DragEvent, columnId: string) => {
       e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
       dragOverColumnRef.current = columnId;
     },
     []
   );
 
+  const handleDragEnd = useCallback(() => {
+    dragColumnRef.current = null;
+    dragOverColumnRef.current = null;
+    setIsDragging(false);
+  }, []);
+
   const handleDrop = useCallback(
     (e: React.DragEvent, targetColumnId: string) => {
       e.preventDefault();
       const sourceId = dragColumnRef.current;
-      if (!sourceId || sourceId === targetColumnId) return;
+      if (!sourceId || sourceId === targetColumnId) {
+        setIsDragging(false);
+        return;
+      }
 
       setColumnOrderState((prev) => {
         const newOrder = [...prev];
@@ -133,36 +145,53 @@ export function LibraryListTable({
 
       dragColumnRef.current = null;
       dragOverColumnRef.current = null;
+      setIsDragging(false);
     },
     []
+  );
+
+  function extractPx(minWidth: string): string {
+    const match = minWidth.match(/\[(\d+)px\]/);
+    return match ? `${match[1]}px` : "100px";
+  }
+
+  const colgroup = (
+    <colgroup>
+      {visibleColumns.map((col) => (
+        <col
+          key={col.id}
+          style={{ width: columnWidths[col.id] ?? extractPx(col.minWidth) }}
+        />
+      ))}
+    </colgroup>
   );
 
   return (
     <div
       className={cn(
-        "library-list-table flex flex-col overflow-hidden rounded-lg border border-border/50 bg-card/20",
+        "library-list-table rounded-[12px] overflow-clip border border-border/50 bg-black",
+        isDragging && "library-list-dragging",
         className
       )}
     >
-      <table className="library-list-table__table w-full min-w-[1280px] border-collapse">
-        <colgroup>
-          {visibleColumns.map((col) => (
-            <col
-              key={col.id}
-              style={{ width: columnWidths[col.id] ?? col.minWidth }}
-            />
-          ))}
-        </colgroup>
-        <LibraryListTableHeader
-          sort={sort}
-          onSortChange={onSortChange}
-          columnWidths={columnWidths}
-          onResizeStart={handleResizeStart}
-          columns={visibleColumns}
-          onDragStart={handleDragStart}
-          onDragOver={handleDragOver}
-          onDrop={handleDrop}
-        />
+      <div className="sticky top-0 z-10 border-b border-[#4B0928] bg-black">
+        <table className="w-full min-w-[1280px] table-fixed border-collapse">
+          {colgroup}
+          <LibraryListTableHeader
+            sort={sort}
+            onSortChange={onSortChange}
+            columnWidths={columnWidths}
+            onResizeStart={handleResizeStart}
+            columns={visibleColumns}
+            onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+            onDragEnd={handleDragEnd}
+          />
+        </table>
+      </div>
+      <table className="w-full min-w-[1280px] table-fixed border-collapse">
+        {colgroup}
         <tbody>
           {isEmpty ? (
             <tr className="library-list-empty-row">
@@ -180,7 +209,9 @@ export function LibraryListTable({
             rows.map((row, index) => (
               <tr
                 key={row.id ?? index}
-                className="library-list-row cursor-pointer transition-colors hover:bg-accent/30"
+                className={cn(
+                  "library-list-row cursor-pointer transition-colors hover:bg-accent/30"
+                )}
                 onClick={() => {
                   const movieId = row.id ?? String(row.tmdbId ?? "");
                   if (movieId) {
@@ -189,7 +220,7 @@ export function LibraryListTable({
                 }}
               >
                 {visibleColumns.map((column) => (
-                  <td key={column.id} className="library-list-td truncate">
+                  <td key={column.id} className="library-list-td">
                     {row[column.id] ?? null}
                   </td>
                 ))}

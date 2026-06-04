@@ -36,7 +36,7 @@ export function LibraryEmptyState({
       >
         <div
           className={cn(
-            "library-empty-glow rounded-full",
+            "rounded-full bg-black/20",
             isEmbedded
               ? "h-[min(360px,80%)] w-[min(480px,90%)]"
               : "h-[min(420px,70%)] w-[min(520px,90%)]"

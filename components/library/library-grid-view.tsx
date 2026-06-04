@@ -64,7 +64,7 @@ export function LibraryGridView({
                 <img
                   src={movie.posterUrl}
                   alt={movie.displayTitle}
-                  className="aspect-[2/3] w-full object-cover transition-transform duration-300 group-hover:scale-[1.035]"
+                  className="aspect-[2/3] w-full rounded-[2px] object-cover transition-transform duration-300 group-hover:scale-[1.035]"
                 />
               ) : (
                 <div className="flex aspect-[2/3] w-full items-center justify-center text-muted-foreground">

@@ -62,9 +62,9 @@ export function LibrarySearch({
         <TooltipTrigger asChild>
           <Button
             type="button"
-            variant={isOpen ? "secondary" : "ghost"}
+            variant="ghost"
             size="icon"
-            className="h-9 w-9 shrink-0"
+            className="h-9 w-9 shrink-0 text-muted-foreground hover:text-foreground"
             onClick={() => onOpenChange(!isOpen)}
             aria-expanded={isOpen}
             aria-label={isOpen ? "Close search" : "Open search"}

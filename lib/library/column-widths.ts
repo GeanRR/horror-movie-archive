@@ -2,14 +2,14 @@ const STORAGE_KEY = "hma-column-widths";
 const MIN_COLUMN_WIDTH = 60;
 
 export const DEFAULT_COLUMN_WIDTHS: Record<string, string> = {
-  poster: "88px",
-  year: "80px",
+  poster: "180px",
+  year: "100px",
   title: "240px",
   titlePt: "200px",
   director: "170px",
   country: "140px",
   distributor: "170px",
-  badge: "100px",
+  badge: "180px",
   stars: "100px",
   review: "200px",
   imdb: "80px",

@@ -78,18 +78,18 @@ export function setColumnOrder(order: ColumnId[]): void {
 }
 
 const DEFAULT_WIDTHS: Record<string, string> = {
-  poster: "88px",
-  year: "80px",
-  title: "240px",
-  titlePt: "200px",
-  director: "170px",
-  country: "140px",
-  distributor: "170px",
-  badge: "100px",
-  stars: "100px",
-  review: "200px",
-  imdb: "80px",
-  rotten: "104px",
+  poster: "180px",
+  year: "100px",
+  title: "280px",
+  titlePt: "240px",
+  director: "200px",
+  country: "160px",
+  distributor: "200px",
+  badge: "180px",
+  stars: "120px",
+  review: "130px",
+  imdb: "90px",
+  rotten: "110px",
 };
 
 export function getColumnWidths(): Record<string, string> {

@@ -13,7 +13,8 @@ type MovieStarsProps = {
 
 const sizeClasses = {
   sm: "h-3.5 w-3.5",
-  md: "h-4 w-4",
+  md: "h-5 w-5",
+  lg: "h-6 w-6",
 } as const;
 
 export function MovieStars({
@@ -43,7 +44,7 @@ export function MovieStars({
   return (
     <span
       className={cn(
-        "inline-flex items-center justify-center gap-0.5 text-primary",
+        "inline-flex items-center justify-center gap-0.5 text-[#E0B63E]",
         className
       )}
       aria-label={`${label} stars`}

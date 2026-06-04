@@ -322,7 +322,7 @@ export function LibraryShell() {
 
   return (
     <>
-      <div className="flex min-h-[calc(100dvh-3rem)] flex-col">
+      <div className="flex h-[calc(100dvh-3rem)] flex-col gap-4">
         <LibraryHeader
           viewMode={viewMode}
           onViewModeChange={setViewMode}
@@ -344,7 +344,7 @@ export function LibraryShell() {
 
         <div
           ref={scrollRef}
-          className="flex min-h-0 flex-1 flex-col overflow-auto"
+          className="library-list-scroll flex min-h-0 flex-1 flex-col overflow-auto"
         >
           {movies.length > 0 && sortedMovies.length === 0 ? (
             <div className="flex min-h-[360px] items-center justify-center rounded-lg border border-dashed border-border/50 bg-card/10 px-6 text-center">

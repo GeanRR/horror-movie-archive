@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import {
   CalendarRange,
@@ -9,7 +10,6 @@ import {
   Library,
   List,
   Settings,
-  Skull,
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -60,11 +60,17 @@ export function Sidebar() {
           collapsed ? "justify-center px-2 py-5" : "px-4 py-5"
         )}
       >
-        <Skull className="h-5 w-5 shrink-0 text-primary" aria-hidden />
+        <Image
+          src="/images/logo.png"
+          alt="Retromax"
+          width={20}
+          height={20}
+          className="shrink-0"
+        />
         {!collapsed && (
           <motion.div variants={fadeIn}>
             <h1 className="text-sm font-semibold leading-tight">
-              Horror Movie
+              Retromax
             </h1>
             <p className="mt-1 text-xs text-muted-foreground">
               {movieCount} {movieCount === 1 ? "Movie" : "Movies"}

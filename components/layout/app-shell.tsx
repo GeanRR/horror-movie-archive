@@ -23,7 +23,6 @@ export function AppShell({ children }: AppShellProps) {
         visualTheme === "vhs" && "vhs-scanlines"
       )}
     >
-      <div className="shell-surface pointer-events-none absolute inset-0" />
       <Sidebar />
       <motion.div
         className="relative flex min-w-0 flex-1 flex-col"

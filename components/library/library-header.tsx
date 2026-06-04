@@ -1,14 +1,8 @@
 "use client";
 
 import { Plus, SlidersHorizontal, X } from "lucide-react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   Tooltip,
   TooltipContent,
@@ -47,19 +41,6 @@ type LibraryHeaderProps = {
   onAddMovie: () => void;
 };
 
-const sortLabels: Record<LibrarySortKey, string> = {
-  title: "Title",
-  titlePt: "Title PT",
-  year: "Year",
-  director: "Director",
-  country: "Country",
-  distributor: "Distributor",
-  stars: "Stars",
-  review: "Personal Review",
-  imdb: "IMDb",
-  rotten: "Rotten Tomatoes",
-};
-
 export function LibraryHeader({
   viewMode,
   onViewModeChange,
@@ -78,42 +59,55 @@ export function LibraryHeader({
 }: LibraryHeaderProps) {
   return (
     <header className="sticky top-0 z-30 shrink-0 border-b border-border/60 bg-background">
-      <div className="flex items-center justify-end gap-2">
-        <LibrarySearch
-          isOpen={isSearchOpen}
-          onOpenChange={onSearchOpenChange}
-          value={searchQuery}
-          onValueChange={onSearchQueryChange}
+      <div className="flex items-center justify-between gap-1.5">
+        <Image
+          src="/images/horror-logo.png"
+          alt="Horror Movie List"
+          width={140}
+          height={28}
+          className="object-contain"
         />
-        <LibraryViewToggle
-          viewMode={viewMode}
-          onViewModeChange={onViewModeChange}
-        />
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="relative h-9 w-9"
-              onClick={() => onFilterPanelOpenChange(!isFilterPanelOpen)}
-              aria-label="Filters"
-              aria-expanded={isFilterPanelOpen}
-            >
-              <SlidersHorizontal className="h-4 w-4" aria-hidden />
-              {activeFilterCount > 0 && (
-                <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-400 px-1 text-[10px] font-semibold text-black">
-                  {activeFilterCount}
-                </span>
-              )}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Filters</TooltipContent>
-        </Tooltip>
-        <Button type="button" onClick={onAddMovie} className="gap-2">
-          <Plus className="h-4 w-4" aria-hidden />
-          Add Movie
-        </Button>
+        <div className="flex items-center gap-1.5">
+          <LibrarySearch
+            isOpen={isSearchOpen}
+            onOpenChange={onSearchOpenChange}
+            value={searchQuery}
+            onValueChange={onSearchQueryChange}
+          />
+          <LibraryViewToggle
+            viewMode={viewMode}
+            onViewModeChange={onViewModeChange}
+          />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="relative h-9 w-9 text-muted-foreground hover:text-foreground"
+                onClick={() => onFilterPanelOpenChange(!isFilterPanelOpen)}
+                aria-label="Filters"
+                aria-expanded={isFilterPanelOpen}
+              >
+                <SlidersHorizontal className="h-4 w-4" aria-hidden />
+                {activeFilterCount > 0 && (
+                  <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-400 px-1 text-[10px] font-semibold text-black">
+                    {activeFilterCount}
+                  </span>
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Filters</TooltipContent>
+          </Tooltip>
+          <Button
+            type="button"
+            onClick={onAddMovie}
+            size="icon"
+            className="h-9 w-9 bg-[#610C33] hover:bg-[#610C33]/90"
+          >
+            <Plus className="h-4 w-4" aria-hidden />
+          </Button>
+        </div>
       </div>
 
       {isFilterPanelOpen && (
