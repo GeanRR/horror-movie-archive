@@ -19,8 +19,47 @@ type TmdbReleaseDatesResponse = {
  results?: TmdbReleaseCountry[];
 };
 
+type TmdbProductionCountry = {
+ iso_3166_1?: string;
+ name?: string;
+};
+
 function normalizeTmdbDate(value: string | undefined) {
  return typeof value === "string" ? value.slice(0, 10) : "";
+}
+
+function getProductionCountry(
+ originCountry: unknown,
+ productionCountries: TmdbProductionCountry[] | undefined
+) {
+ const countries = Array.isArray(productionCountries)
+ ? productionCountries
+ : [];
+ const originCodes = Array.isArray(originCountry)
+ ? originCountry.filter(
+ (code): code is string =>
+ typeof code === "string" && code.trim().length > 0
+ )
+ : [];
+
+ const originNames = originCodes
+ .map((code) => {
+ const match = countries.find(
+ (country) => country.iso_3166_1 === code
+ );
+ return match?.name?.trim() || code;
+ })
+ .filter(Boolean);
+
+ if (originNames.length > 0) {
+ return originNames.join(", ");
+ }
+
+ const productionNames = countries
+ .map((country) => country.name?.trim())
+ .filter((name): name is string => Boolean(name));
+
+ return productionNames.length > 0 ? productionNames.join(", ") : "—";
 }
 
 function findReleaseDate(
@@ -232,8 +271,10 @@ export async function GET(
 
  director,
 
- country:
- details.production_countries?.[0]?.name ?? "—",
+ country: getProductionCountry(
+ details.origin_country,
+ details.production_countries
+ ),
 
  genres,
  subgenres: primarySubgenre ? [primarySubgenre] : [],
