@@ -10,3 +10,99 @@ datasource db {
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
+
+model Watchlist {
+  id        String          @id @default(cuid())
+  name      String
+  items     WatchlistItem[]
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+}
+
+model WatchlistItem {
+  id           String    @id @default(cuid())
+  watchlistId  String
+  watchlist    Watchlist @relation(fields: [watchlistId], references: [id], onDelete: Cascade)
+  tmdbId       Int?
+  imdbId       String?
+  displayTitle String
+  year         String
+  posterUrl    String?
+  position     Int
+  createdAt    DateTime  @default(now())
+
+  @@unique([watchlistId, tmdbId])
+  @@unique([watchlistId, imdbId])
+  @@index([watchlistId, position])
+  @@index([tmdbId])
+  @@index([imdbId])
+}
+
+enum AwaitingReviewItemStatus {
+  PENDING
+  ADDED
+  IGNORED
+  DUPLICATE
+}
+
+model AwaitingReviewItem {
+  id          String                   @id @default(cuid())
+  imdbId      String                   @unique
+  tmdbId      Int?
+  displayTitle String
+  year        String?
+  posterUrl   String?
+  watchedAt   DateTime?
+  source      String
+  status      AwaitingReviewItemStatus @default(PENDING)
+  createdAt   DateTime                 @default(now())
+  updatedAt   DateTime                 @updatedAt
+  resolvedAt  DateTime?
+
+  @@index([status, watchedAt])
+  @@index([tmdbId])
+}
+
+model StremioWatchedSyncState {
+  id                      String    @id @default("default")
+  hasCompletedInitialSync Boolean   @default(false)
+  lastSyncedAt            DateTime?
+  lastSyncError           String?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+}
+
+model StremioWatchedState {
+  imdbId             String   @id
+  type               String
+  name               String?
+  lastWatched        DateTime?
+  timesWatched       Int?
+  timeWatched        Int?
+  timeOffset         Int?
+  overallTimeWatched Int?
+  flaggedWatched     Boolean?
+  duration           Int?
+  watched            Boolean?
+  isCompleted        Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([isCompleted])
+  @@index([lastWatched])
+}
+
+model StremioWatchedEvent {
+  id               String   @id @default(cuid())
+  imdbId           String
+  name             String?
+  detectedAt       DateTime @default(now())
+  lastWatched      DateTime?
+  timesWatched     Int?
+  completionSource String
+  previous         Json?
+  current          Json
+
+  @@index([detectedAt])
+  @@index([imdbId])
+}

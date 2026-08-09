@@ -75,7 +75,13 @@ export const LIBRARY_LIST_COLUMNS: LibraryListColumnDef[] = [
     sortKey: "distributor",
     minWidth: "min-w-[180px]",
   },
-  { id: "badge", label: "Badge", sortable: false, minWidth: "min-w-[180px]" },
+  {
+    id: "badge",
+    label: "Badge",
+    sortable: true,
+    sortKey: "badge",
+    minWidth: "min-w-[180px]",
+  },
   {
     id: "stars",
     label: "Stars",

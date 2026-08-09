@@ -28,7 +28,7 @@ export function isMasterpieceScore(
 
 export function formatStars(stars: number | null | undefined): string {
   if (typeof stars !== "number" || !Number.isFinite(stars) || stars <= 0) {
-    return "-";
+    return "—";
   }
 
   return `${stars}/${MAX_STARS}`;
@@ -42,7 +42,7 @@ export function formatReviewScore(
     !Number.isFinite(reviewScore) ||
     reviewScore <= 0
   ) {
-    return "-";
+    return "—";
   }
 
   return `${Number.isInteger(reviewScore)

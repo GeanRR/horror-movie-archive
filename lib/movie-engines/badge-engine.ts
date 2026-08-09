@@ -10,12 +10,17 @@ export const AUTO_BADGE_IDS = [
   "badge9",
 ] as const;
 
-export const MANUAL_BADGE_IDS = ["badge10", "badge11", "badge12"] as const;
+export const MANUAL_BADGE_IDS = [
+  "badge10",
+  "badge11",
+  "badge12",
+  "badge13",
+] as const;
 
 export const MOVIE_BADGES = [
   {
     id: "badge1",
-    label: "badge1",
+    label: "Classic",
     description: "10 review score",
     assetPath: "/badges/badge_1.png",
     minReviewScore: 10,
@@ -24,7 +29,7 @@ export const MOVIE_BADGES = [
   },
   {
     id: "badge2",
-    label: "badge2",
+    label: "Killer",
     description: "9 to 9.5 review score",
     assetPath: "/badges/badge_2.png",
     minReviewScore: 9,
@@ -33,7 +38,7 @@ export const MOVIE_BADGES = [
   },
   {
     id: "badge3",
-    label: "badge3",
+    label: "Terrific",
     description: "8 to 8.5 review score",
     assetPath: "/badges/badge_3.png",
     minReviewScore: 8,
@@ -42,7 +47,7 @@ export const MOVIE_BADGES = [
   },
   {
     id: "badge4",
-    label: "badge4",
+    label: "Bloody Good",
     description: "7 to 7.5 review score",
     assetPath: "/badges/badge_4.png",
     minReviewScore: 7,
@@ -51,7 +56,7 @@ export const MOVIE_BADGES = [
   },
   {
     id: "badge5",
-    label: "badge5",
+    label: "Decent",
     description: "6 to 6.5 review score",
     assetPath: "/badges/badge_5.png",
     minReviewScore: 6,
@@ -60,7 +65,7 @@ export const MOVIE_BADGES = [
   },
   {
     id: "badge6",
-    label: "badge6",
+    label: "Forgettable",
     description: "5 to 5.5 review score",
     assetPath: "/badges/badge_6.png",
     minReviewScore: 5,
@@ -69,7 +74,7 @@ export const MOVIE_BADGES = [
   },
   {
     id: "badge7",
-    label: "badge7",
+    label: "Rotten",
     description: "4 to 4.5 review score",
     assetPath: "/badges/badge_7.png",
     minReviewScore: 4,
@@ -78,7 +83,7 @@ export const MOVIE_BADGES = [
   },
   {
     id: "badge8",
-    label: "badge8",
+    label: "Tragic",
     description: "1.5 to 3.5 review score",
     assetPath: "/badges/badge_8.png",
     minReviewScore: 1.5,
@@ -87,7 +92,7 @@ export const MOVIE_BADGES = [
   },
   {
     id: "badge9",
-    label: "badge9",
+    label: "Abomination",
     description: "1 review score",
     assetPath: "/badges/badge_9.png",
     minReviewScore: 1,
@@ -96,7 +101,7 @@ export const MOVIE_BADGES = [
   },
   {
     id: "badge10",
-    label: "badge10",
+    label: "Guilty Pleasure",
     description: "Manual-only badge",
     assetPath: "/badges/badge_10.png",
     minReviewScore: null,
@@ -105,7 +110,7 @@ export const MOVIE_BADGES = [
   },
   {
     id: "badge11",
-    label: "badge11",
+    label: "Trash",
     description: "Manual-only badge",
     assetPath: "/badges/badge_11.png",
     minReviewScore: null,
@@ -114,9 +119,18 @@ export const MOVIE_BADGES = [
   },
   {
     id: "badge12",
-    label: "badge12",
+    label: "Nasty",
     description: "Manual-only badge",
     assetPath: "/badges/badge_12.png",
+    minReviewScore: null,
+    automatic: false,
+    tone: "manual",
+  },
+  {
+    id: "badge13",
+    label: "Hidden Gem",
+    description: "Manual-only badge",
+    assetPath: "/badges/badge_13.png",
     minReviewScore: null,
     automatic: false,
     tone: "manual",

@@ -31,6 +31,7 @@ export function mapSearchResultToDraft(
     cast: [],
     crew: [],
     genres: [],
+    subgenres: [],
 
     imdbId: undefined,
     imdbScore: null,

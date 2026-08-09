@@ -9,6 +9,7 @@ export const LIBRARY_SORT_KEYS = [
   "director",
   "country",
   "distributor",
+  "badge",
   "stars",
   "review",
   "imdb",
@@ -31,26 +32,26 @@ export const DEFAULT_LIBRARY_SORT: LibrarySortState = {
 export const LIBRARY_PAGE_SIZE = 100;
 
 export type LibraryFilters = {
-  genre: string;
+  decade: string;
+  subgenre: string;
   country: string;
-  distributor: string;
   badgeId: string;
   stars: string;
   bestOfYear: boolean;
 };
 
 export type LibraryFilterOptions = {
-  genres: string[];
+  decades: string[];
+  subgenres: string[];
   countries: string[];
-  distributors: string[];
   badges: string[];
   stars: string[];
 };
 
 export const DEFAULT_LIBRARY_FILTERS: LibraryFilters = {
-  genre: "",
+  decade: "",
+  subgenre: "",
   country: "",
-  distributor: "",
   badgeId: "",
   stars: "",
   bestOfYear: false,

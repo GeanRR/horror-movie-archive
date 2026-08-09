@@ -8,12 +8,20 @@ export type MovieDetailsResponse = {
     titlePt: string;
     year: string;
     releaseDate: string;
+    releaseDates?: {
+      theatrical?: string;
+      streaming?: string;
+      digital?: string;
+    };
 
     runtime: number | null;
     director: string;
     country: string;
 
     genres: string[];
+    subgenres: string[];
+    keywords?: string[];
+    collections?: string[];
 
     overview: string;
 
@@ -22,6 +30,7 @@ export type MovieDetailsResponse = {
     rottenTomatoesScore?: number | null;
 
     distributor?: string;
+    productionCompanies?: string[];
 
     cast?: string[];
     crew?: string[];

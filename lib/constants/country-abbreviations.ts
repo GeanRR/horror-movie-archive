@@ -73,6 +73,6 @@ const COUNTRY_MAP: Record<string, string> = {
 };
 
 export function abbreviateCountry(country: string | null | undefined): string {
-  if (!country) return "-";
+  if (!country) return "—";
   return COUNTRY_MAP[country] ?? country;
 }

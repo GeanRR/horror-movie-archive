@@ -42,6 +42,7 @@ export type AddMovieMovieDraft = {
   cast: string[];
   crew: string[];
   genres: string[];
+  subgenres: string[];
 
   imdbId?: string;
   imdbScore: number | null;

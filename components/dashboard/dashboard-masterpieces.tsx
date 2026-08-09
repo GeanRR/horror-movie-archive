@@ -1,88 +1,56 @@
 "use client";
 
 import type { LibraryMovie } from "@/store/movie-store";
-import { MovieBadge } from "@/components/movie/movie-badge";
-import { formatReviewScore } from "@/lib/movie-engines/stars-engine";
+import { VhsPoster } from "@/components/movie/vhs-poster";
 
 type DashboardMasterpiecesProps = {
-  movies: LibraryMovie[];
+ movies: LibraryMovie[];
 };
 
-export function DashboardMasterpieces({
-  movies,
-}: DashboardMasterpiecesProps) {
-  if (movies.length === 0) {
-    return (
-      <section className="flex flex-col gap-4">
-        <h2 className="text-lg font-semibold tracking-tight">
-          10/10 Masterpieces
-        </h2>
-        <div className="flex min-h-[200px] items-center justify-center rounded-lg border border-dashed border-border/50 bg-card/10 px-6 text-center">
-          <p className="text-sm text-muted-foreground">
-            No 10/10 masterpieces yet.
-          </p>
-        </div>
-      </section>
-    );
-  }
+export function DashboardMasterpieces({ movies }: DashboardMasterpiecesProps) {
+ return (
+ <section className="rounded-md border border-[#610C33]/30 bg-black p-4">
+ <h3 className="text-[11px] font-semibold uppercase text-zinc-400">
+ 10/10 Masterpieces
+ </h3>
 
-  return (
-    <section className="flex flex-col gap-4">
-      <div className="flex items-center gap-3">
-        <h2 className="text-lg font-semibold tracking-tight">
-          10/10 Masterpieces
-        </h2>
-        <span className="rounded-md border border-amber-400/30 bg-amber-400/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-amber-300">
-          Hall of Fame
-        </span>
-      </div>
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {movies.map((movie) => (
-          <article
-            key={movie.id}
-            className="flex gap-4 rounded-lg border border-amber-400/20 bg-gradient-to-br from-amber-400/5 to-transparent p-4"
-          >
-            {movie.posterUrl ? (
-              <img
-                src={movie.posterUrl}
-                alt={movie.displayTitle}
-                className="h-28 w-20 shrink-0 rounded-md object-cover ring-1 ring-amber-400/20"
-              />
-            ) : (
-              <div className="flex h-28 w-20 shrink-0 items-center justify-center rounded-md border border-amber-400/20 text-xs text-muted-foreground">
-                No Poster
-              </div>
-            )}
-            <div className="min-w-0 flex-1 space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="text-lg leading-none text-amber-400">
-                  ★
-                </span>
-                <span className="text-[10px] font-medium uppercase tracking-wider text-amber-400/70">
-                  Masterpiece
-                </span>
-              </div>
-              <div>
-                <h3 className="truncate text-base font-semibold tracking-tight">
-                  {movie.displayTitle}
-                </h3>
-                <p className="truncate text-sm text-muted-foreground">
-                  {movie.director}
-                </p>
-                <p className="text-xs text-muted-foreground/70">
-                  {movie.year}
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <MovieBadge badgeId={movie.badgeId} />
-                <span className="text-xs font-medium text-amber-400">
-                  {formatReviewScore(movie.reviewScore)}/10
-                </span>
-              </div>
-            </div>
-          </article>
-        ))}
-      </div>
-    </section>
-  );
+ {movies.length === 0 ? (
+ <div className="mt-3 flex h-20 items-center justify-center">
+ <p className="text-sm text-zinc-500">No 10/10 entries yet.</p>
+ </div>
+ ) : (
+ <div className="mt-3 grid grid-cols-[repeat(auto-fit,minmax(11rem,12.5rem))] gap-2.5">
+ {movies.map((movie) => (
+ <article key={movie.id} className="grid grid-cols-[3rem_1fr] gap-3">
+ {movie.posterUrl ? (
+ <VhsPoster
+ src={movie.posterUrl}
+ alt={movie.displayTitle}
+ className="h-16 w-11 rounded-sm"
+ />
+ ) : (
+ <div className="flex h-16 w-11 items-center justify-center rounded-sm bg-zinc-950 text-[9px] text-zinc-600">
+ —
+ </div>
+ )}
+ <div className="min-w-0">
+ <h4 className="truncate text-sm font-medium text-zinc-100">
+ {movie.displayTitle}
+ </h4>
+ <p className="truncate text-[11px] text-zinc-500">
+ {movie.director && movie.director !== "-" ? movie.director : "—"}
+ </p>
+ <div className="mt-1 flex items-center gap-2">
+ <span className="text-[11px] text-zinc-500">{movie.year || "—"}</span>
+ <span className="text-[11px] font-semibold text-[#E0B63E]">
+ 10/10
+ </span>
+ </div>
+ </div>
+ </article>
+ ))}
+ </div>
+ )}
+ </section>
+ );
 }
