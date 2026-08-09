@@ -2,6 +2,7 @@ export type CsvRow = {
   title: string;
   reviewScore: number | null;
   year: number | null;
+  watchedDate: string;
 };
 
 export type ImportRowStatus =

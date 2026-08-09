@@ -125,7 +125,7 @@ export async function importSingleMovie(
       badgeId,
       badgeOverrideEnabled: false,
 
-      watchedDate: "",
+      watchedDate: csvRow.watchedDate,
       rewatchHistory: [],
       bestOfYear: false,
 

@@ -73,7 +73,7 @@ function ImportFlow({
  return (
  <div className="space-y-3">
  <p className="text-xs text-muted-foreground">
- Upload a CSV file with columns: title, review_score, year.
+ Upload a CSV file with columns: title, review_score, year, watched_date.
  </p>
  <label className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-border/60 px-4 py-3 text-sm text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground">
  <Search className="h-4 w-4" />
