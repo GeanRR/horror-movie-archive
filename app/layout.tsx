@@ -29,6 +29,11 @@ const anton = localFont({
 export const metadata: Metadata = {
  title: "Horror Movie Archive",
  description: "Private premium horror movie archive",
+ icons: {
+ icon: "/images/logo.png",
+ shortcut: "/images/logo.png",
+ apple: "/images/logo.png",
+ },
 };
 
 export default function RootLayout({
