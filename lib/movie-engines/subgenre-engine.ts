@@ -106,6 +106,16 @@ const SUBGENRE_RULES: SubgenreRule[] = [
       "ghost horror",
       "haunted house horror",
     ],
+    supportTerms: [
+      "supernatural",
+      "paranormal",
+      "occult",
+      "demon",
+      "evil spirit",
+      "haunted house",
+      "ritual",
+      "curse",
+    ],
   },
   {
     label: "Sci-Fi Horror",
