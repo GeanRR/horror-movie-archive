@@ -217,7 +217,13 @@ export function useAddMovieFlow(open: boolean) {
  draft.rottenTomatoesScore =
  details.rottenTomatoesScore ?? null;
  } catch (error) {
- console.error("Failed to load movie details", error);
+ setSearchError(
+ error instanceof Error
+ ? error.message
+ : "Failed to load movie metadata."
+ );
+ setPanelState("results");
+ return;
  }
 
  setSelectedMovie(draft);
