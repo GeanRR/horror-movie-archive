@@ -312,6 +312,9 @@ async function fetchWikipediaInfoboxDistributor(
 }
 
 async function fetchWikipediaWikitext(title: string) {
+  const rawWikitext = await fetchWikipediaRawWikitext(title);
+  if (rawWikitext) return rawWikitext;
+
   const params = new URLSearchParams({
     action: "query",
     format: "json",
@@ -344,6 +347,40 @@ async function fetchWikipediaWikitext(title: string) {
       | undefined;
 
     return slots?.main?.content ?? slots?.main?.["*"] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchWikipediaRawWikitext(title: string, redirectCount = 0) {
+  const params = new URLSearchParams({
+    title,
+    action: "raw",
+    ctype: "text/plain",
+  });
+
+  try {
+    const response = await fetch(`${WIKIPEDIA_API_ENDPOINT.replace(
+      "/w/api.php",
+      "/w/index.php"
+    )}?${params}`, {
+      headers: { "User-Agent": USER_AGENT },
+      next: { revalidate: 0 },
+    });
+
+    if (!response.ok) return null;
+
+    const wikitext = await response.text();
+    if (!wikitext || /^You are making too many requests/i.test(wikitext)) {
+      return null;
+    }
+
+    const redirectMatch = wikitext.match(/^#REDIRECT\s*\[\[([^\]#]+)[^\]]*\]\]/i);
+    if (redirectMatch?.[1] && redirectCount < 2) {
+      return fetchWikipediaRawWikitext(redirectMatch[1], redirectCount + 1);
+    }
+
+    return wikitext;
   } catch {
     return null;
   }
