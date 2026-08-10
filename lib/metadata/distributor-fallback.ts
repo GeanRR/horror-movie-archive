@@ -430,7 +430,8 @@ function stripReferencesAndComments(value: string) {
   return value
     .replace(/<!--[\s\S]*?-->/g, "")
     .replace(/<ref\b[^>]*\/\s*>/gi, "")
-    .replace(/<ref\b[^>]*>[\s\S]*?<\/ref>/gi, "");
+    .replace(/<ref\b[^>]*>[\s\S]*?<\/ref>/gi, "")
+    .replace(/\{\{\s*(efn|refn|notetag|#tag:ref)\b[^{}]*\}\}/gi, "");
 }
 
 function parseDistributorCandidate(value: string): DistributorCandidate | null {
