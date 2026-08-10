@@ -426,8 +426,8 @@ type DistributorCandidate = {
 function stripReferencesAndComments(value: string) {
   return value
     .replace(/<!--[\s\S]*?-->/g, "")
-    .replace(/<ref[\s\S]*?<\/ref>/gi, "")
-    .replace(/<ref[^/>]*\/>/gi, "");
+    .replace(/<ref\b[^>]*\/\s*>/gi, "")
+    .replace(/<ref\b[^>]*>[\s\S]*?<\/ref>/gi, "");
 }
 
 function parseDistributorCandidate(value: string): DistributorCandidate | null {
