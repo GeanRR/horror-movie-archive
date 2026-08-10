@@ -35,7 +35,7 @@ const SUBGENRE_RULES: SubgenreRule[] = [
   {
     label: "Slasher",
     priority: 100,
-    terms: ["slasher", "serial killer", "masked killer", "stalker", "killer"],
+    terms: ["slasher", "masked killer", "final girl", "stalk and slash"],
   },
   {
     label: "Zombie Horror",
@@ -55,17 +55,17 @@ const SUBGENRE_RULES: SubgenreRule[] = [
   {
     label: "Body Horror",
     priority: 90,
-    terms: ["body horror", "mutation", "mutant", "parasite", "transformation", "flesh"],
+    terms: ["body horror", "mutation", "mutant", "parasite", "flesh"],
   },
   {
     label: "Possession Horror",
     priority: 88,
-    terms: ["possession", "possessed", "exorcism", "exorcist", "demon"],
+    terms: ["possession", "possessed", "exorcism", "exorcist"],
   },
   {
     label: "Folk Horror",
     priority: 86,
-    terms: ["folk horror", "witch", "witchcraft", "pagan", "cult", "ritual", "rural"],
+    terms: ["folk horror", "witchcraft", "pagan ritual", "pagan cult"],
   },
   {
     label: "Cosmic Horror",
@@ -75,7 +75,7 @@ const SUBGENRE_RULES: SubgenreRule[] = [
   {
     label: "Supernatural Horror",
     priority: 82,
-    terms: ["supernatural", "ghost", "haunting", "haunted", "demon", "spirit", "curse"],
+    terms: ["supernatural", "ghost", "haunting", "haunted house", "spirit", "curse"],
   },
   {
     label: "Sci-Fi Horror",
@@ -86,7 +86,7 @@ const SUBGENRE_RULES: SubgenreRule[] = [
   {
     label: "Psychological Horror",
     priority: 78,
-    terms: ["psychological", "paranoia", "hallucination", "madness", "trauma", "mental"],
+    terms: ["psychological horror", "paranoia", "hallucination", "madness"],
   },
   {
     label: "Creature Feature",
@@ -193,11 +193,15 @@ export function getPrimarySubgenre(value: LibraryMovie | SubgenreMetadata) {
 
     return {
       label: rule.label,
+      structuredHits,
+      genreHits,
+      overviewHits,
       score: structuredHits * 4 + genreHits * 3 + overviewHits,
       priority: rule.priority,
     };
   })
-    .filter((match) => match.score > 0)
+    .filter((match) => match.structuredHits > 0 || match.genreHits > 0)
+    .filter((match) => match.score >= 4)
     .sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score;
       return b.priority - a.priority;
@@ -206,7 +210,7 @@ export function getPrimarySubgenre(value: LibraryMovie | SubgenreMetadata) {
   const best = matches[0];
   if (!best) return "";
 
-  return best.score >= 2 ? best.label : "";
+  return best.label;
 }
 
 export function normalizePrimarySubgenres(

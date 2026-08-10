@@ -24,7 +24,7 @@ function FactCard({
  <p className="text-[10px] font-semibold uppercase text-zinc-400">
  {label}
  </p>
- <p className="mt-2 truncate text-sm font-medium text-zinc-100">{title}</p>
+ <p className="mt-2 text-sm font-medium text-zinc-100">{title}</p>
  {value && <p className="mt-1 text-xs text-zinc-400">{value}</p>}
  </div>
  );

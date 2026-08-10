@@ -106,7 +106,7 @@ export function LibraryListTableHeader({
  !column.sortable && "cursor-default"
 )}
 >
- <span className="min-w-0 truncate text-center">
+ <span className="min-w-0 text-center">
  {renderHeaderLabel(column)}
  </span>
  {column.sortable && (

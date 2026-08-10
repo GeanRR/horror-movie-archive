@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Film, X } from "lucide-react";
 import { MovieDetailsModal } from "@/components/movie/movie-details-modal";
 import { VhsPoster } from "@/components/movie/vhs-poster";
@@ -21,6 +21,8 @@ const MONTHS = [
   "November",
   "December",
 ] as const;
+
+const RELEASE_CALENDAR_STORAGE_KEY = "hma-release-calendar-movies";
 
 type ReleaseType = "Theatrical" | "Streaming" | "Digital / VOD";
 
@@ -62,6 +64,21 @@ function watchlistMovieKey(movie: WatchlistMovie) {
   if (movie.tmdbId !== null) return `tmdb-${movie.tmdbId}`;
   if (movie.imdbId) return `imdb-${movie.imdbId}`;
   return `${movie.displayTitle.toLowerCase()}-${movie.year}`;
+}
+
+function readStoredCalendarMovies() {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const parsed = JSON.parse(
+      window.localStorage.getItem(RELEASE_CALENDAR_STORAGE_KEY) ?? "[]"
+    ) as unknown;
+
+    return Array.isArray(parsed) ? (parsed as WatchlistMovie[]) : [];
+  } catch {
+    window.localStorage.removeItem(RELEASE_CALENDAR_STORAGE_KEY);
+    return [];
+  }
 }
 
 function releaseTypeDates(movie: WatchlistMovie) {
@@ -175,7 +192,7 @@ function ReleaseMovieCard({
         <h3 className="archive-anton mt-2 text-2xl uppercase leading-none text-[#e9e3d4]">
           {movie.displayTitle}
         </h3>
-        <p className="mt-2 truncate font-sans text-xs font-bold text-[#6f6c7a]">
+        <p className="mt-2 font-sans text-xs font-bold text-[#6f6c7a]">
           {release.releaseType}
         </p>
       </div>
@@ -194,14 +211,39 @@ export default function ReleaseCalendarPage() {
   ).getTime();
   const [selectedMonth, setSelectedMonth] = useState<ReleaseMonthModal>(null);
   const [selectedMovie, setSelectedMovie] = useState<LibraryMovie | null>(null);
+  const [calendarMovies, setCalendarMovies] = useState<WatchlistMovie[]>([]);
+
+  useEffect(() => {
+    setCalendarMovies(readStoredCalendarMovies());
+  }, []);
+
+  useEffect(() => {
+    const incomingMovies = lists.flatMap((list) => list.movies);
+    if (incomingMovies.length === 0) return;
+
+    setCalendarMovies((current) => {
+      const moviesByKey = new Map<string, WatchlistMovie>();
+      for (const movie of current) {
+        moviesByKey.set(watchlistMovieKey(movie), movie);
+      }
+      for (const movie of incomingMovies) {
+        moviesByKey.set(watchlistMovieKey(movie), movie);
+      }
+
+      const nextMovies = Array.from(moviesByKey.values());
+      window.localStorage.setItem(
+        RELEASE_CALENDAR_STORAGE_KEY,
+        JSON.stringify(nextMovies)
+      );
+      return nextMovies;
+    });
+  }, [lists]);
 
   const releases = useMemo<ReleaseEntry[]>(() => {
     const moviesByKey = new Map<string, WatchlistMovie>();
 
-    lists.forEach((list) => {
-      list.movies.forEach((movie) => {
-        moviesByKey.set(watchlistMovieKey(movie), movie);
-      });
+    calendarMovies.forEach((movie) => {
+      moviesByKey.set(watchlistMovieKey(movie), movie);
     });
 
     return Array.from(moviesByKey.values())
@@ -252,7 +294,7 @@ export default function ReleaseCalendarPage() {
         if (!b.date) return -1;
         return a.date.getTime() - b.date.getTime();
       });
-  }, [currentYear, lists, todayStartTime]);
+  }, [calendarMovies, currentYear, todayStartTime]);
 
   const monthlyReleases = useMemo(
     () =>

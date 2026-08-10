@@ -11,6 +11,7 @@ import { LibraryHeader } from "@/components/library/library-header";
 import { LibraryContent } from "@/components/library/library-content";
 import { MovieDetailsModal } from "@/components/movie/movie-details-modal";
 import { Button } from "@/components/ui/button";
+import { normalizeCountries, formatCountry } from "@/lib/constants/country-abbreviations";
 import { MOVIE_BADGES, getBadgeDefinition } from "@/lib/movie-engines/badge-engine";
 import { useMovieStore } from "@/store/movie-store";
 import type { LibraryMovie } from "@/store/movie-store";
@@ -63,7 +64,12 @@ function movieMatchesFilters(
 ): boolean {
  if (filters.decade && getMovieDecade(movie) !== filters.decade) return false;
  if (filters.subgenre && movie.subgenres[0] !== filters.subgenre) return false;
- if (filters.country && movie.country !== filters.country) return false;
+ if (
+ filters.country &&
+ !normalizeCountries(movie.country).includes(filters.country)
+ ) {
+ return false;
+ }
  if (filters.badgeId && movie.badgeId !== filters.badgeId) return false;
  if (filters.stars && String(movie.stars) !== filters.stars) return false;
  if (filters.bestOfYear && !movie.bestOfYear) return false;
@@ -104,7 +110,7 @@ function compareBySortKey(
  case "director":
  return compareStrings(a.director, b.director);
  case "country":
- return compareStrings(a.country, b.country);
+ return compareStrings(formatCountry(a.country), formatCountry(b.country));
  case "distributor":
  return compareStrings(a.distributor, b.distributor);
  case "badge":
@@ -131,7 +137,7 @@ function isMissingSortValue(movie: LibraryMovie, key: LibrarySortKey): boolean {
  case "director":
  return !movie.director;
  case "country":
- return !movie.country;
+ return normalizeCountries(movie.country).length === 0;
  case "distributor":
  return !movie.distributor || movie.distributor === "-" || movie.distributor === "—";
  case "badge":
@@ -296,7 +302,7 @@ export function LibraryShell() {
  (a, b) => Number(a.slice(0, 4)) - Number(b.slice(0, 4))
  ),
  subgenres: uniqueSorted(movies.map((movie) => movie.subgenres[0] ?? "")),
- countries: uniqueSorted(movies.map((movie) => movie.country)),
+ countries: uniqueSorted(movies.flatMap((movie) => normalizeCountries(movie.country))),
  badges: MOVIE_BADGES.map((badge) => badge.id),
  stars: uniqueSorted(
  movies

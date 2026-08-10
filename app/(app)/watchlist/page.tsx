@@ -504,10 +504,10 @@ function AddMoviesModal({
                       </div>
                     )}
                     <div className="min-w-0">
-                      <h3 className="archive-anton truncate text-2xl uppercase leading-none text-[#e9e3d4]">
+                      <h3 className="archive-anton text-2xl uppercase leading-none text-[#e9e3d4]">
                         {result.title}
                       </h3>
-                      <p className="mt-2 truncate font-sans text-sm text-[#6f6c7a]">
+                      <p className="mt-2 font-sans text-sm text-[#6f6c7a]">
                         {formatMissing(result.releaseYear)}
                       </p>
                     </div>

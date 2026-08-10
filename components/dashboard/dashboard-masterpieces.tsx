@@ -34,10 +34,10 @@ export function DashboardMasterpieces({ movies }: DashboardMasterpiecesProps) {
  </div>
  )}
  <div className="min-w-0">
- <h4 className="truncate text-sm font-medium text-zinc-100">
+ <h4 className="text-sm font-medium text-zinc-100">
  {movie.displayTitle}
  </h4>
- <p className="truncate text-[11px] text-zinc-500">
+ <p className="text-[11px] text-zinc-500">
  {movie.director && movie.director !== "-" ? movie.director : "—"}
  </p>
  <div className="mt-1 flex items-center gap-2">

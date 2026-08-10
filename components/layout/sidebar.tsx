@@ -22,9 +22,9 @@ const SIDEBAR_COLLAPSED_KEY = "hma-sidebar-collapsed";
 const navItems = [
  { href: "/library", label: "Library", icon: Library },
  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+ { href: "/watchlist", label: "Watchlist", icon: List },
  { href: "/year-in-review", label: "Year in Review", icon: Trophy },
  { href: "/release-calendar", label: "Release Calendar", icon: CalendarRange },
- { href: "/watchlist", label: "Watchlist", icon: List },
  { href: "/settings", label: "Settings", icon: Settings },
 ] as const;
 

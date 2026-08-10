@@ -69,7 +69,7 @@ export function DashboardRecentActivity({
  </div>
  )}
  <div className="min-w-0 flex-1">
- <p className="truncate text-sm text-foreground/90">
+ <p className="text-sm text-foreground/90">
  {movie.displayTitle}
  </p>
  <p className="text-[11px] text-muted-foreground">

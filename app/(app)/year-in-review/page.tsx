@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Film, X } from "lucide-react";
 import { MovieStars } from "@/components/movie/movie-stars";
 import { VhsPoster } from "@/components/movie/vhs-poster";
+import { abbreviateCountry, normalizeCountries } from "@/lib/constants/country-abbreviations";
 import { formatReviewScore } from "@/lib/movie-engines/stars-engine";
 import { useMovieStore } from "@/store/movie-store";
 import type { LibraryMovie } from "@/store/movie-store";
@@ -95,17 +96,7 @@ function releaseYear(movie: LibraryMovie) {
 }
 
 function compactCountry(value: string | null | undefined) {
- if (!value) return "-";
- const key = value.toLowerCase();
- if (
- key === "usa" ||
- key === "us" ||
- key === "united states" ||
- key === "united states of america"
- ) {
- return "USA";
- }
- return value;
+ return abbreviateCountry(value);
 }
 
 function compactDecade(value: number | null | undefined) {
@@ -151,20 +142,31 @@ function topCount<T extends string | number>(values: T[]) {
  })[0]?.[0];
 }
 
-function topCountEntry(values: string[]) {
- const counts = new Map<string, number>();
+function topMovieGroupEntry(
+ entries: WatchedMovie[],
+ labelsForEntry: (entry: WatchedMovie) => string[]
+) {
+ const groups = new Map<string, LibraryMovie[]>();
 
- for (const value of values) {
- counts.set(value, (counts.get(value) ?? 0) + 1);
+ for (const entry of entries) {
+ for (const label of new Set(labelsForEntry(entry).filter(Boolean))) {
+ const current = groups.get(label) ?? [];
+ current.push(entry.movie);
+ groups.set(label, current);
+ }
  }
 
- const [label, count] =
- [...counts.entries()].sort((a, b) => {
- if (b[1] !== a[1]) return b[1] - a[1];
+ const [label, movies] =
+ [...groups.entries()].sort((a, b) => {
+ const countDelta = b[1].length - a[1].length;
+ if (countDelta !== 0) return countDelta;
+ const scoreDelta =
+ (averagePersonalScore(b[1]) ?? -1) - (averagePersonalScore(a[1]) ?? -1);
+ if (scoreDelta !== 0) return scoreDelta;
  return a[0].localeCompare(b[0]);
  })[0] ?? [];
 
- return label ? { label, count } : null;
+ return label && movies ? { label, count: movies.length } : null;
 }
 
 function sortByWatchedDate(a: WatchedMovie, b: WatchedMovie) {
@@ -357,7 +359,7 @@ function PeopleCard({
  >
  <PersonPhoto person={person} className="h-9 w-9 rounded-full" />
  <div className="min-w-0">
- <p className="archive-anton truncate text-xl leading-none text-[#e9e3d4]">
+ <p className="archive-anton text-xl leading-none text-[#e9e3d4]">
  <span className="text-[#8b0f49]">
  {String(index + 2).padStart(2, "0")}.
  </span>{" "}
@@ -433,6 +435,16 @@ function averagePersonalScore(movies: LibraryMovie[]) {
  return scores.reduce((sum, score) => sum + score, 0) / scores.length;
 }
 
+function compareGroupsByCountScoreName<
+ T extends { count: number; averagePersonalScore: number | null; name: string },
+>(a: T, b: T) {
+ if (b.count !== a.count) return b.count - a.count;
+ const scoreDelta =
+ (b.averagePersonalScore ?? -1) - (a.averagePersonalScore ?? -1);
+ if (scoreDelta !== 0) return scoreDelta;
+ return a.name.localeCompare(b.name);
+}
+
 function CompactMovieStrip({ movies }: { movies: LibraryMovie[] }) {
  return (
  <div className="relative h-[58px] overflow-hidden rounded-[4px]">
@@ -495,7 +507,7 @@ function MonthlyMovieCard({ entry }: { entry: WatchedMovie }) {
  <h3 className="archive-anton mt-2 text-2xl uppercase leading-none text-[#e9e3d4]">
  {movie.displayTitle}
  </h3>
- <p className="mt-2 truncate font-sans text-xs font-black uppercase text-[#6f6c7a]">
+ <p className="mt-2 font-sans text-xs font-black uppercase text-[#6f6c7a]">
  <span className="font-black">{movie.year}</span>
  <span className="mx-2 font-black">•</span>
  <span className="font-normal">
@@ -724,8 +736,7 @@ export default function YearInReviewPage() {
 
  const topCountry = useMemo(() => {
  const countries = yearEntries
- .map(({ movie }) => displayValue(movie.country))
- .filter((country): country is string => Boolean(country));
+ .flatMap(({ movie }) => normalizeCountries(movie.country));
 
  return topCount(countries);
  }, [yearEntries]);
@@ -761,16 +772,14 @@ export default function YearInReviewPage() {
  if (yearDelta !== 0) return yearDelta;
  return a.movie.displayTitle.localeCompare(b.movie.displayTitle);
  })[0];
- const topDirector = topCountEntry(
- yearEntries
- .map(({ movie }) => displayValue(movie.director))
- .filter((value): value is string => Boolean(value))
- );
- const topDistributor = topCountEntry(
- yearEntries
- .map(({ movie }) => firstDistributor(movie.distributor))
- .filter((value): value is string => Boolean(value))
- );
+ const topDirector = topMovieGroupEntry(yearEntries, ({ movie }) => {
+ const director = displayValue(movie.director);
+ return director ? [director] : [];
+ });
+ const topDistributor = topMovieGroupEntry(yearEntries, ({ movie }) => {
+ const distributor = firstDistributor(movie.distributor);
+ return distributor ? [distributor] : [];
+ });
 
  return [
  {
@@ -864,10 +873,7 @@ export default function YearInReviewPage() {
  movies: [...subgenreMovies].sort(compareMovieScore),
  coverMovies: [...subgenreMovies].sort(compareMovieScore).slice(0, 5),
  }))
- .sort((a, b) => {
- if (b.count !== a.count) return b.count - a.count;
- return a.name.localeCompare(b.name);
- })
+ .sort(compareGroupsByCountScoreName)
  .slice(0, 10);
  }, [yearEntries]);
 
@@ -1113,7 +1119,7 @@ export default function YearInReviewPage() {
  aria-label={`Open ${subgenre.name} movies`}
  >
  <div className="min-w-0">
- <h3 className="archive-anton truncate text-3xl leading-none text-[#e9e3d4]">
+ <h3 className="archive-anton text-3xl leading-none text-[#e9e3d4]">
  <span className="text-[#8b0f49]">
  {String(index + 1).padStart(2, "0")}.
  </span>{" "}

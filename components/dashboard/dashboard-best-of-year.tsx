@@ -41,14 +41,14 @@ export function DashboardBestOfYear({ movies }: DashboardBestOfYearProps) {
  )}
  <div className="min-w-0">
  <div className="flex items-center gap-1.5">
- <h4 className="min-w-0 truncate text-sm font-medium text-zinc-100">
+ <h4 className="min-w-0 text-sm font-medium text-zinc-100">
  {movie.displayTitle}
  </h4>
  {index === 0 && (
  <BestOfYearCrown active className="[&_img]:h-3.5 [&_img]:w-3.5" />
  )}
  </div>
- <p className="truncate text-[11px] text-zinc-500">
+ <p className="text-[11px] text-zinc-500">
  {movie.director && movie.director !== "-" ? movie.director : "—"}
  </p>
  <div className="mt-1 flex items-center gap-2">

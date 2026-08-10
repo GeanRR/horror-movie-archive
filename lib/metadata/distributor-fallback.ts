@@ -329,11 +329,36 @@ function extractInfoboxField(infobox: string, fieldNames: string[]) {
 function normalizeDistributor(value: string | null | undefined) {
   if (!value) return null;
 
-  const cleaned = value
+  const candidates = expandDistributorCandidates(value);
+  for (const candidate of candidates) {
+    const cleaned = cleanDistributorCandidate(candidate);
+    if (isValidDistributorValue(cleaned)) {
+      return cleaned;
+    }
+  }
+
+  return null;
+}
+
+function expandDistributorCandidates(value: string) {
+  const expanded = value
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/\{\{\s*(ubl|unbulleted list|plainlist|flatlist)\s*\|/gi, "")
+    .replace(/\{\{\s*nowrap\s*\|([^{}]+)\}\}/gi, "$1")
+    .replace(/<br\s*\/?>/gi, "|")
+    .replace(/\n\*\s*/g, "|")
+    .replace(/\n/g, "|");
+
+  return expanded
+    .split("|")
+    .map((candidate) => candidate.trim())
+    .filter(Boolean);
+}
+
+function cleanDistributorCandidate(value: string) {
+  return value
     .replace(/<ref[\s\S]*?<\/ref>/gi, "")
     .replace(/<ref[^/>]*\/>/gi, "")
-    .replace(/\{\{ubl\|/gi, "")
-    .replace(/\{\{plainlist\|/gi, "")
     .replace(/\{\{nowrap\|([^{}]+)\}\}/gi, "$1")
     .replace(/\{\{flagicon\|[^{}]+\}\}/gi, "")
     .replace(/\{\{[^{}]+\}\}/g, "")
@@ -348,8 +373,15 @@ function normalizeDistributor(value: string | null | undefined) {
     .replace(/\s+/g, " ")
     .replace(/^[,;\s]+|[,;\s]+$/g, "")
     .trim();
+}
 
-  return cleaned || null;
+function isValidDistributorValue(value: string | null | undefined) {
+  if (!value) return false;
+  if (value.length < 2 || value.length > 120) return false;
+  if (/[{}<>[\]|]/.test(value)) return false;
+  if (/<!--|-->|template|citation needed|unknown/i.test(value)) return false;
+  if (!/[a-z0-9]/i.test(value)) return false;
+  return true;
 }
 
 function normalizeComparableDistributor(value: string) {

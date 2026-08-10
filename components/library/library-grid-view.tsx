@@ -108,10 +108,10 @@ export function LibraryGridView({
  </div>
 
  <div className="relative z-10 min-w-0 self-center">
- <h3 className={cn("archive-anton truncate text-[24px] uppercase leading-none", toneClassName)}>
+ <h3 className={cn("archive-anton text-[24px] uppercase leading-none", toneClassName)}>
  {movie.displayTitle}
  </h3>
- <p className={cn("mt-3 truncate archive-anton text-[16px] uppercase leading-none", toneClassName)}>
+ <p className={cn("mt-3 archive-anton text-[16px] uppercase leading-none", toneClassName)}>
  {formatMissingValue(movie.titlePt || movie.originalTitle)}
  </p>
  <p className={cn("mt-5 font-sans text-[14px] font-normal", toneClassName)}>
@@ -137,17 +137,6 @@ export function LibraryGridView({
  </span>
  <span className="inline-flex items-center gap-1.5">
  <img
- src="/images/rotten.png"
- alt=""
- aria-hidden
- className="h-6 w-6 object-contain"
- />
- {movie.rottenTomatoesScore !== null
- ? formatReviewScore(movie.rottenTomatoesScore / 10)
- : formatMissingValue(null)}
- </span>
- <span className="inline-flex items-center gap-1.5">
- <img
  src="/images/imdb.png"
  alt=""
  aria-hidden
@@ -155,6 +144,17 @@ export function LibraryGridView({
  />
  {movie.imdbScore !== null
  ? formatReviewScore(movie.imdbScore)
+ : formatMissingValue(null)}
+ </span>
+ <span className="inline-flex items-center gap-1.5">
+ <img
+ src="/images/rotten.png"
+ alt=""
+ aria-hidden
+ className="h-6 w-6 object-contain"
+ />
+ {movie.rottenTomatoesScore !== null
+ ? formatReviewScore(movie.rottenTomatoesScore / 10)
  : formatMissingValue(null)}
  </span>
  </div>

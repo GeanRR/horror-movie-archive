@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { formatCountry } from "@/lib/constants/country-abbreviations";
 import { fetchDistributorFallback } from "@/lib/metadata/distributor-fallback";
 import { getPrimarySubgenre } from "@/lib/movie-engines/subgenre-engine";
 import { fetchMovieRatings } from "@/lib/omdb/fetch-movie-ratings";
@@ -271,10 +272,10 @@ export async function GET(
 
  director,
 
- country: getProductionCountry(
+ country: formatCountry(getProductionCountry(
  details.origin_country,
  details.production_countries
- ),
+ )),
 
  genres,
  subgenres: primarySubgenre ? [primarySubgenre] : [],

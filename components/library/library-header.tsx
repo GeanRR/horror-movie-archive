@@ -50,7 +50,7 @@ function FilterDropdown({
  onClick={() => setOpen((current) => !current)}
  aria-expanded={open}
  >
- <span className="flex min-w-0 items-center gap-2 truncate pr-6">
+ <span className="flex min-w-0 items-center gap-2 pr-6">
  {selectedOption?.imageSrc && (
  <img
  src={selectedOption.imageSrc}
@@ -58,7 +58,7 @@ function FilterDropdown({
  className="h-6 w-6 shrink-0 object-contain"
  />
  )}
- <span className="truncate">{selectedOption?.label ?? placeholder}</span>
+ <span>{selectedOption?.label ?? placeholder}</span>
  </span>
  <ChevronDown
  className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#e9e3d4]"
@@ -99,7 +99,7 @@ function FilterDropdown({
  className="h-8 w-8 shrink-0 object-contain"
  />
  )}
- <span className="truncate">{option.label}</span>
+ <span>{option.label}</span>
  </button>
  ))}
  </div>

@@ -73,7 +73,7 @@ function RankedList({
  <span className="pt-0.5 text-right text-xs text-zinc-600">
  {index + 1}
  </span>
- <span className="truncate text-sm font-medium text-zinc-100">
+ <span className="text-sm font-medium text-zinc-100">
  {entry.name}
  </span>
  <span className="text-right text-xs text-zinc-500">{entry.count}</span>
@@ -130,10 +130,10 @@ function MovieRankedList({
  </div>
  )}
  <div className="min-w-0">
- <p className="truncate text-sm font-medium text-zinc-100">
+ <p className="text-sm font-medium text-zinc-100">
  {movie.displayTitle}
  </p>
- <p className="truncate text-[11px] text-zinc-500">
+ <p className="text-[11px] text-zinc-500">
  {movie.director && movie.director !== "-" ? movie.director : "—"}
  </p>
  </div>

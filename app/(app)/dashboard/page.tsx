@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Film, X } from "lucide-react";
 import { VhsPoster } from "@/components/movie/vhs-poster";
 import { MovieStars } from "@/components/movie/movie-stars";
+import { abbreviateCountry, normalizeCountries } from "@/lib/constants/country-abbreviations";
 import { useMovieStore, type LibraryMovie } from "@/store/movie-store";
 
 type CountEntry = {
@@ -89,17 +90,6 @@ function decadeFromYear(year: number) {
  return `${Math.floor(year / 10) * 10}s`;
 }
 
-function normalizeCountry(value: string) {
- const key = value.trim().toLowerCase();
- if (["usa", "us", "united states", "united states of america"].includes(key)) {
- return "United States";
- }
- if (["uk", "united kingdom", "great britain"].includes(key)) {
- return "United Kingdom";
- }
- return value.trim();
-}
-
 function firstDistributor(value: string | null | undefined) {
  const distributor = cleanText(value);
  if (!distributor) return null;
@@ -134,6 +124,16 @@ function countBy(
  if (b.count !== a.count) return b.count - a.count;
  return a.name.localeCompare(b.name);
  });
+}
+
+function compareGroupsByCountScoreName<
+ T extends { count: number; averagePersonalScore: number | null; name: string },
+>(a: T, b: T) {
+ if (b.count !== a.count) return b.count - a.count;
+ const scoreDelta =
+ (b.averagePersonalScore ?? -1) - (a.averagePersonalScore ?? -1);
+ if (scoreDelta !== 0) return scoreDelta;
+ return a.name.localeCompare(b.name);
 }
 
 function mostCommonNumber(values: number[]) {
@@ -219,11 +219,6 @@ function sortMoviesByLowestScore(movies: LibraryMovie[]) {
 
  return a.displayTitle.localeCompare(b.displayTitle);
  });
-}
-
-function compactCountry(value: string | null | undefined) {
- if (!value) return "—";
- return value === "United States" ? "USA" : value;
 }
 
 function compactDecadeLabel(value: string | null | undefined) {
@@ -406,7 +401,7 @@ function PeopleCard({
  className="h-9 w-9 rounded-full"
  />
  <div className="min-w-0">
- <p className="archive-anton truncate text-xl leading-none text-[#e9e3d4]">
+ <p className="archive-anton text-xl leading-none text-[#e9e3d4]">
  <span className="text-[#8b0f49]">
  {String(index + 2).padStart(2, "0")}.
  </span>{" "}
@@ -639,7 +634,7 @@ function DashboardModalMovieCard({ movie }: { movie: LibraryMovie }) {
  </div>
  )}
  <div className="min-w-0">
- <h3 className="truncate font-sans text-sm font-semibold text-[#e9e3d4]">
+ <h3 className="font-sans text-sm font-semibold text-[#e9e3d4]">
  {movie.displayTitle}
  </h3>
  <p className="mt-1 text-sm text-[#6f6c7a]">
@@ -686,17 +681,14 @@ export default function DashboardPage() {
  const year = releaseYear(movie);
  return [year ? decadeFromYear(year) : null];
  });
- const countryCounts = countBy(movies, (movie) => {
- const country = cleanText(movie.country);
- return [country ? normalizeCountry(country) : null];
- });
+ const countryCounts = countBy(movies, (movie) => normalizeCountries(movie.country));
  const mostWatchedYear = mostCommonNumber(releaseYears);
 
  return [
  ["Total movies", String(movies.length)],
  ["Most watched year", mostWatchedYear ? String(mostWatchedYear[0]) : "—"],
  ["Most watched decade", compactDecadeLabel(decadeCounts[0]?.name)],
- ["Most watched country", compactCountry(countryCounts[0]?.name)],
+ ["Most watched country", abbreviateCountry(countryCounts[0]?.name)],
  ];
  }, [movies]);
 
@@ -851,13 +843,11 @@ export default function DashboardPage() {
  const groups = new Map<string, LibraryMovie[]>();
 
  for (const movie of movies) {
- const country = cleanText(movie.country);
- if (!country) continue;
-
- const normalized = normalizeCountry(country);
- const current = groups.get(normalized) ?? [];
+ for (const country of normalizeCountries(movie.country)) {
+ const current = groups.get(country) ?? [];
  current.push(movie);
- groups.set(normalized, current);
+ groups.set(country, current);
+ }
  }
 
  return [...groups.entries()]
@@ -871,10 +861,7 @@ export default function DashboardPage() {
  movies: sortMoviesByScore(countryMovies),
  coverMovies: sortMoviesByScore(countryMovies).slice(0, 10),
  }))
- .sort((a, b) => {
- if (b.count !== a.count) return b.count - a.count;
- return a.name.localeCompare(b.name);
- })
+ .sort(compareGroupsByCountScoreName)
  .slice(0, 10);
  }, [movies]);
 
@@ -901,10 +888,7 @@ export default function DashboardPage() {
  movies: sortMoviesByScore(subgenreMovies),
  coverMovies: sortMoviesByScore(subgenreMovies).slice(0, 10),
  }))
- .sort((a, b) => {
- if (b.count !== a.count) return b.count - a.count;
- return a.name.localeCompare(b.name);
- })
+ .sort(compareGroupsByCountScoreName)
  .slice(0, 10);
  }, [movies]);
 
@@ -931,10 +915,7 @@ export default function DashboardPage() {
  movies: sortMoviesByScore(distributorMovies),
  coverMovies: sortMoviesByScore(distributorMovies).slice(0, 10),
  }))
- .sort((a, b) => {
- if (b.count !== a.count) return b.count - a.count;
- return a.name.localeCompare(b.name);
- })
+ .sort(compareGroupsByCountScoreName)
  .slice(0, 10);
  }, [movies]);
 
@@ -1269,7 +1250,7 @@ export default function DashboardPage() {
  aria-label={`Open ${country.name} movies`}
  >
  <div className="min-w-0">
- <h3 className="archive-anton truncate text-3xl uppercase leading-none text-[#e9e3d4]">
+ <h3 className="archive-anton text-3xl uppercase leading-none text-[#e9e3d4]">
  <span className="text-[#8b0f49]">
  {String(index + 1).padStart(2, "0")}.
  </span>{" "}
@@ -1362,7 +1343,7 @@ export default function DashboardPage() {
  aria-label={`Open ${subgenre.name} movies`}
  >
  <div className="min-w-0">
- <h3 className="archive-anton truncate text-3xl leading-none text-[#e9e3d4]">
+ <h3 className="archive-anton text-3xl leading-none text-[#e9e3d4]">
  <span className="text-[#8b0f49]">
  {String(index + 1).padStart(2, "0")}.
  </span>{" "}
@@ -1455,7 +1436,7 @@ export default function DashboardPage() {
  aria-label={`Open ${distributor.name} movies`}
  >
  <div className="min-w-0">
- <h3 className="archive-anton truncate text-3xl leading-none text-[#e9e3d4]">
+ <h3 className="archive-anton text-3xl leading-none text-[#e9e3d4]">
  <span className="text-[#8b0f49]">
  {String(index + 1).padStart(2, "0")}.
  </span>{" "}

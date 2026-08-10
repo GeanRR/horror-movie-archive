@@ -37,7 +37,6 @@ type PersonAggregate = {
 };
 
 const PROFILE_BASE_URL = "https://image.tmdb.org/t/p/w342";
-const CREDIT_LIMIT = 80;
 
 function aggregatePerson(
  map: Map<number, PersonAggregate>,
@@ -123,7 +122,15 @@ function serializePerson(person: PersonAggregate | undefined, totalMovies: numbe
 function topPeople(map: Map<number, PersonAggregate>, totalMovies: number, limit: number) {
  return [...map.values()]
  .filter((person) => person.count > 0)
- .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+ .sort((a, b) => {
+ const countDelta = b.count - a.count;
+ if (countDelta !== 0) return countDelta;
+
+ const scoreDelta = (averageScore(b.movies) ?? -1) - (averageScore(a.movies) ?? -1);
+ if (scoreDelta !== 0) return scoreDelta;
+
+ return a.name.localeCompare(b.name);
+ })
  .slice(0, limit)
  .map((person) => serializePerson(person, totalMovies))
  .filter((person): person is NonNullable<ReturnType<typeof serializePerson>> => Boolean(person));
@@ -144,8 +151,7 @@ export async function POST(request: NextRequest) {
  typeof movie.tmdbId === "number" &&
  Number.isFinite(movie.tmdbId) &&
  typeof movie.title === "string"
- )
- .slice(0, CREDIT_LIMIT);
+ );
 
  const actorMap = new Map<number, PersonAggregate>();
  const actressMap = new Map<number, PersonAggregate>();
