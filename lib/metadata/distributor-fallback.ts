@@ -446,11 +446,69 @@ type DistributorCandidate = {
 };
 
 function stripReferencesAndComments(value: string) {
-  return value
+  return removeNamedTemplates(value, ["efn", "refn", "notetag", "#tag:ref"])
     .replace(/<!--[\s\S]*?-->/g, "")
     .replace(/<ref\b[^>]*\/\s*>/gi, "")
     .replace(/<ref\b[^>]*>[\s\S]*?<\/ref>/gi, "")
     .replace(/\{\{\s*(efn|refn|notetag|#tag:ref)\b[^{}]*\}\}/gi, "");
+}
+
+function removeNamedTemplates(value: string, templateNames: string[]) {
+  let result = "";
+  let index = 0;
+
+  while (index < value.length) {
+    const start = value.indexOf("{{", index);
+    if (start === -1) {
+      result += value.slice(index);
+      break;
+    }
+
+    result += value.slice(index, start);
+
+    const nameMatch = value
+      .slice(start + 2)
+      .match(/^\s*([^|}\s]+(?:\s+[^|}\s]+)*)/);
+    const templateName = nameMatch?.[1]?.trim().toLowerCase();
+
+    if (!templateName || !templateNames.includes(templateName)) {
+      result += "{{";
+      index = start + 2;
+      continue;
+    }
+
+    const end = findTemplateEnd(value, start);
+    if (end === -1) {
+      index = start + 2;
+      continue;
+    }
+
+    index = end;
+  }
+
+  return result;
+}
+
+function findTemplateEnd(value: string, start: number) {
+  let depth = 0;
+
+  for (let index = start; index < value.length - 1; index += 1) {
+    const pair = value.slice(index, index + 2);
+
+    if (pair === "{{") {
+      depth += 1;
+      index += 1;
+      continue;
+    }
+
+    if (pair === "}}") {
+      depth -= 1;
+      index += 1;
+      if (depth === 0) return index + 1;
+    }
+  }
+
+  return -1;
 }
 
 function parseDistributorCandidate(value: string): DistributorCandidate | null {
