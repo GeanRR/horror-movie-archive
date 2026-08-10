@@ -1,8 +1,11 @@
+import { normalizeCountries } from "@/lib/constants/country-abbreviations";
+
 type DistributorFallbackInput = {
   imdbId?: string;
   tmdbId: number;
   title: string;
   year: string;
+  originCountry?: string;
 };
 
 type WikidataMovie = {
@@ -20,27 +23,6 @@ type WikidataBinding = Record<
 const WIKIDATA_SPARQL_ENDPOINT = "https://query.wikidata.org/sparql";
 const WIKIPEDIA_API_ENDPOINT = "https://en.wikipedia.org/w/api.php";
 const USER_AGENT = "HorrorMovieArchive/1.0 metadata fallback";
-const STREAMING_DISTRIBUTOR_NAMES = new Set(
-  [
-    "Netflix",
-    "Amazon Prime Video",
-    "Prime Video",
-    "Amazon Video",
-    "Hulu",
-    "Shudder",
-    "Mubi",
-    "Tubi",
-    "Max",
-    "HBO Max",
-    "Disney+",
-    "Disney Plus",
-    "Apple TV+",
-    "Apple TV Plus",
-    "Peacock",
-    "Paramount+",
-    "Paramount Plus",
-  ].map((name) => normalizeComparableDistributor(name))
-);
 
 export function isMissingMetadataValue(value: string | null | undefined) {
   const normalized = value?.trim();
@@ -52,13 +34,15 @@ export async function fetchDistributorFallback({
   tmdbId,
   title,
   year,
+  originCountry,
 }: DistributorFallbackInput): Promise<string | null> {
   const wikidataMovie = await findWikidataMovie({ imdbId, tmdbId });
 
   if (wikidataMovie) {
     if (wikidataMovie.enwikiTitle) {
       const wikipediaDistributor = await fetchWikipediaInfoboxDistributor(
-        wikidataMovie.enwikiTitle
+        wikidataMovie.enwikiTitle,
+        originCountry
       );
 
       if (wikipediaDistributor) {
@@ -85,7 +69,7 @@ export async function fetchDistributorFallback({
     return null;
   }
 
-  return fetchWikipediaInfoboxDistributor(titleSearchMatch);
+  return fetchWikipediaInfoboxDistributor(titleSearchMatch, originCountry);
 }
 
 async function findWikidataMovie({
@@ -155,8 +139,7 @@ async function fetchWikidataDistributor(itemId: string) {
     return null;
   }
 
-  const distributor = normalizeDistributor(labels[0]);
-  return isLikelyStreamingDistributor(distributor) ? null : distributor;
+  return normalizeDistributor(labels[0]);
 }
 
 async function fetchWikidataBindings(query: string) {
@@ -237,7 +220,10 @@ async function findWikipediaTitleMatch({
   }
 }
 
-async function fetchWikipediaInfoboxDistributor(title: string) {
+async function fetchWikipediaInfoboxDistributor(
+  title: string,
+  originCountry?: string
+) {
   const wikitext = await fetchWikipediaWikitext(title);
   if (!wikitext) return null;
 
@@ -250,7 +236,7 @@ async function fetchWikipediaInfoboxDistributor(title: string) {
     "distributors",
   ]);
 
-  return normalizeDistributor(rawValue);
+  return normalizeDistributor(rawValue, originCountry);
 }
 
 async function fetchWikipediaWikitext(title: string) {
@@ -314,35 +300,112 @@ function extractInfobox(wikitext: string) {
 }
 
 function extractInfoboxField(infobox: string, fieldNames: string[]) {
+  const source = stripReferencesAndComments(infobox);
+
   for (const fieldName of fieldNames) {
-    const pattern = new RegExp(
-      String.raw`^\|\s*${fieldName}\s*=\s*([\s\S]*?)(?=^\|\s*[\w ]+\s*=|\n\}\})`,
-      "im"
-    );
-    const match = infobox.match(pattern);
-    if (match?.[1]) return match[1];
+    const pattern = new RegExp(String.raw`^\|\s*${fieldName}\s*=`, "im");
+    const match = pattern.exec(source);
+    if (!match) continue;
+
+    const start = match.index + match[0].length;
+    let templateDepth = 0;
+
+    for (let index = start; index < source.length - 1; index += 1) {
+      const pair = source.slice(index, index + 2);
+
+      if (pair === "{{") {
+        templateDepth += 1;
+        index += 1;
+        continue;
+      }
+
+      if (pair === "}}") {
+        if (templateDepth === 0) return source.slice(start, index).trim();
+        templateDepth -= 1;
+        index += 1;
+        continue;
+      }
+
+      if (source[index] === "\n" && templateDepth === 0) {
+        const nextLine = source.slice(index + 1);
+        if (/^\|\s*[\w ]+\s*=/.test(nextLine) || /^}}/.test(nextLine)) {
+          return source.slice(start, index).trim();
+        }
+      }
+    }
+
+    return source.slice(start).trim();
   }
 
   return null;
 }
 
-function normalizeDistributor(value: string | null | undefined) {
+function normalizeDistributor(
+  value: string | null | undefined,
+  originCountry?: string
+) {
   if (!value) return null;
 
-  const candidates = expandDistributorCandidates(value);
-  for (const candidate of candidates) {
-    const cleaned = cleanDistributorCandidate(candidate);
-    if (isValidDistributorValue(cleaned)) {
-      return cleaned;
-    }
-  }
+  const candidates = expandDistributorCandidates(value)
+    .map((candidate) => parseDistributorCandidate(candidate))
+    .filter((candidate): candidate is DistributorCandidate => Boolean(candidate));
 
-  return null;
+  return chooseDistributorCandidate(candidates, originCountry)?.name ?? null;
+}
+
+type DistributorCandidate = {
+  name: string;
+  territory: string;
+};
+
+function stripReferencesAndComments(value: string) {
+  return value
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/<ref[\s\S]*?<\/ref>/gi, "")
+    .replace(/<ref[^/>]*\/>/gi, "");
+}
+
+function parseDistributorCandidate(value: string): DistributorCandidate | null {
+  const cleaned = cleanDistributorCandidate(value);
+  if (!isValidDistributorValue(cleaned)) return null;
+
+  const territoryMatch = cleaned.match(/\(([^()]+)\)\s*$/);
+  const territory = territoryMatch?.[1]?.trim() ?? "";
+  const name = cleaned.replace(/\s*\([^()]+\)\s*$/, "").trim();
+
+  if (!isValidDistributorValue(name)) return null;
+
+  return { name, territory };
+}
+
+function chooseDistributorCandidate(
+  candidates: DistributorCandidate[],
+  originCountry?: string
+) {
+  if (candidates.length === 0) return null;
+
+  const byOrigin = candidates.find((candidate) =>
+    territoryMatchesOrigin(candidate.territory, originCountry)
+  );
+  if (byOrigin) return byOrigin;
+
+  const byUnitedStates = candidates.find((candidate) =>
+    territoryMatches(candidate.territory, ["United States"])
+  );
+  if (byUnitedStates) return byUnitedStates;
+
+  const byWorldwide = candidates.find((candidate) =>
+    /\b(worldwide|international|global|all territories)\b/i.test(
+      candidate.territory
+    )
+  );
+  if (byWorldwide) return byWorldwide;
+
+  return candidates[0];
 }
 
 function expandDistributorCandidates(value: string) {
-  const expanded = value
-    .replace(/<!--[\s\S]*?-->/g, "")
+  const expanded = stripReferencesAndComments(value)
     .replace(/\{\{\s*(ubl|unbulleted list|plainlist|flatlist)\s*\|/gi, "")
     .replace(/\{\{\s*nowrap\s*\|([^{}]+)\}\}/gi, "$1")
     .replace(/<br\s*\/?>/gi, "|")
@@ -350,15 +413,13 @@ function expandDistributorCandidates(value: string) {
     .replace(/\n/g, "|");
 
   return expanded
-    .split("|")
+    .split(/[|;]/)
     .map((candidate) => candidate.trim())
     .filter(Boolean);
 }
 
 function cleanDistributorCandidate(value: string) {
-  return value
-    .replace(/<ref[\s\S]*?<\/ref>/gi, "")
-    .replace(/<ref[^/>]*\/>/gi, "")
+  return stripReferencesAndComments(value)
     .replace(/\{\{nowrap\|([^{}]+)\}\}/gi, "$1")
     .replace(/\{\{flagicon\|[^{}]+\}\}/gi, "")
     .replace(/\{\{[^{}]+\}\}/g, "")
@@ -366,6 +427,7 @@ function cleanDistributorCandidate(value: string) {
     .replace(/\[\[[^\]|]+\|([^\]]+)\]\]/g, "$1")
     .replace(/\[\[([^\]]+)\]\]/g, "$1")
     .replace(/'''?/g, "")
+    .replace(/^(distributed|released)\s+by\s+/i, "")
     .replace(/<br\s*\/?>/gi, ", ")
     .replace(/\n\*\s*/g, ", ")
     .replace(/\n/g, ", ")
@@ -377,31 +439,75 @@ function cleanDistributorCandidate(value: string) {
 
 function isValidDistributorValue(value: string | null | undefined) {
   if (!value) return false;
-  if (value.length < 2 || value.length > 120) return false;
-  if (/[{}<>[\]|]/.test(value)) return false;
+  if (value.length < 2 || value.length > 80) return false;
+  if (/[={}<>[\]|]/.test(value)) return false;
   if (/<!--|-->|template|citation needed|unknown/i.test(value)) return false;
+  if (
+    /\b(magazine|journal|publisher|publication|citation|reference|isbn|doi|editor|retrieved|access-date|newspaper|website|url|service|services)\b/i.test(
+      value
+    )
+  ) {
+    return false;
+  }
+  if (/\b(distributed|released|published|retrieved|accessed)\b/i.test(value)) {
+    return false;
+  }
+  if (value.split(/\s+/).length > 8) return false;
   if (!/[a-z0-9]/i.test(value)) return false;
   return true;
 }
 
-function normalizeComparableDistributor(value: string) {
+function territoryMatchesOrigin(
+  territory: string,
+  originCountry: string | undefined
+) {
+  const origins = normalizeCountries(originCountry);
+  if (origins.length === 0) return false;
+
+  return territoryMatches(territory, origins);
+}
+
+function territoryMatches(territory: string, countries: string[]) {
+  if (!territory) return false;
+
+  const comparable = normalizeComparableTerritory(territory);
+  return countries.some((country) => {
+    const normalizedCountry = normalizeComparableTerritory(country);
+    if (comparable.includes(normalizedCountry)) return true;
+
+    if (
+      normalizedCountry === "united states" &&
+      /\b(us|u s|usa|u s a|america|american)\b/.test(comparable)
+    ) {
+      return true;
+    }
+
+    if (
+      normalizedCountry === "united kingdom" &&
+      /\b(uk|u k|britain|british|england)\b/.test(comparable)
+    ) {
+      return true;
+    }
+
+    if (
+      ["norway", "sweden", "denmark", "finland", "iceland"].includes(
+        normalizedCountry
+      ) &&
+      /\b(nordic|scandinavia|scandinavian)\b/.test(comparable)
+    ) {
+      return true;
+    }
+
+    return false;
+  });
+}
+
+function normalizeComparableTerritory(value: string) {
   return value
     .toLowerCase()
-    .replace(/[+]/g, " plus")
     .replace(/[^a-z0-9]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
-}
-
-function isLikelyStreamingDistributor(value: string | null) {
-  if (!value) return false;
-
-  const names = value
-    .split(",")
-    .map((name) => normalizeComparableDistributor(name))
-    .filter(Boolean);
-
-  return names.some((name) => STREAMING_DISTRIBUTOR_NAMES.has(name));
 }
 
 function sparqlString(value: string) {

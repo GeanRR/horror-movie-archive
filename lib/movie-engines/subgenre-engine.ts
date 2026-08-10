@@ -13,7 +13,6 @@ type SubgenreRule = {
   label: string;
   priority: number;
   terms: string[];
-  genreTerms?: string[];
 };
 
 const SUBGENRE_RULES: SubgenreRule[] = [
@@ -25,12 +24,18 @@ const SUBGENRE_RULES: SubgenreRule[] = [
   {
     label: "Found Footage",
     priority: 105,
-    terms: ["found footage", "mockumentary", "documentary crew", "video camera"],
+    terms: [
+      "found footage",
+      "found-footage",
+      "mockumentary horror",
+      "documentary horror",
+      "documentary crew",
+    ],
   },
   {
     label: "Giallo",
     priority: 104,
-    terms: ["giallo", "masked killer", "black-gloved", "black gloves"],
+    terms: ["giallo", "italian giallo"],
   },
   {
     label: "Slasher",
@@ -40,58 +45,87 @@ const SUBGENRE_RULES: SubgenreRule[] = [
   {
     label: "Zombie Horror",
     priority: 96,
-    terms: ["zombie", "zombies", "undead", "living dead", "infected"],
+    terms: ["zombie horror", "zombie apocalypse", "living dead", "zombies"],
   },
   {
     label: "Vampire Horror",
     priority: 94,
-    terms: ["vampire", "vampires", "dracula", "bloodsucker"],
+    terms: ["vampire horror", "vampires", "dracula", "bloodsucker"],
   },
   {
     label: "Werewolf Horror",
     priority: 92,
-    terms: ["werewolf", "lycanthrope", "full moon"],
+    terms: ["werewolf horror", "werewolf", "lycanthrope"],
   },
   {
     label: "Body Horror",
     priority: 90,
-    terms: ["body horror", "mutation", "mutant", "parasite", "flesh"],
+    terms: [
+      "body horror",
+      "bodily transformation",
+      "grotesque physical transformation",
+      "physical transformation",
+      "flesh mutation",
+      "flesh transformation",
+    ],
   },
   {
     label: "Possession Horror",
     priority: 88,
-    terms: ["possession", "possessed", "exorcism", "exorcist"],
+    terms: [
+      "possession horror",
+      "demonic possession",
+      "exorcism horror",
+      "exorcist",
+    ],
   },
   {
     label: "Folk Horror",
     priority: 86,
-    terms: ["folk horror", "witchcraft", "pagan ritual", "pagan cult"],
+    terms: [
+      "folk horror",
+      "folk-horror",
+      "pagan horror",
+      "rural occult horror",
+      "folklore-based horror",
+      "folk tale horror",
+    ],
   },
   {
     label: "Cosmic Horror",
     priority: 84,
-    terms: ["cosmic horror", "lovecraft", "eldritch", "ancient god", "cosmic"],
+    terms: ["cosmic horror", "lovecraftian horror", "eldritch horror"],
   },
   {
     label: "Supernatural Horror",
     priority: 82,
-    terms: ["supernatural", "ghost", "haunting", "haunted house", "spirit", "curse"],
+    terms: [
+      "supernatural horror",
+      "ghost story",
+      "ghost horror",
+      "haunted house horror",
+    ],
   },
   {
     label: "Sci-Fi Horror",
     priority: 80,
-    terms: ["alien", "space", "extraterrestrial", "science experiment", "laboratory"],
-    genreTerms: ["science fiction", "sci-fi"],
+    terms: [
+      "science fiction horror",
+      "science-fiction horror",
+      "sci-fi horror",
+      "sci fi horror",
+      "alien horror",
+    ],
   },
   {
     label: "Psychological Horror",
     priority: 78,
-    terms: ["psychological horror", "paranoia", "hallucination", "madness"],
+    terms: ["psychological horror", "psychological-horror"],
   },
   {
     label: "Creature Feature",
     priority: 76,
-    terms: ["creature", "monster", "beast", "animal attack", "shark", "crocodile"],
+    terms: ["creature feature", "monster movie", "animal attack horror"],
   },
   {
     label: "Home Invasion",
@@ -101,18 +135,27 @@ const SUBGENRE_RULES: SubgenreRule[] = [
   {
     label: "Torture Horror",
     priority: 72,
-    terms: ["torture", "sadistic", "captivity", "abduction"],
+    terms: ["torture horror", "torture porn", "sadistic horror"],
   },
   {
     label: "Gothic Horror",
     priority: 70,
-    terms: ["gothic", "castle", "victorian", "mansion"],
+    terms: ["gothic horror", "gothic-horror"],
+  },
+  {
+    label: "Fairy-tale Horror",
+    priority: 69,
+    terms: [
+      "fairy tale horror",
+      "fairy-tale horror",
+      "dark fairy tale",
+      "dark fairy-tale",
+    ],
   },
   {
     label: "Horror Comedy",
     priority: 68,
-    terms: ["horror comedy", "dark comedy"],
-    genreTerms: ["comedy"],
+    terms: ["horror comedy", "comedy horror", "horror-comedy", "splatstick"],
   },
 ];
 
@@ -124,18 +167,6 @@ const COLLECTION_RULES: Array<[RegExp, string]> = [
   [/alien/i, "Sci-Fi Horror"],
   [/evil dead/i, "Possession Horror"],
   [/living dead|dead/i, "Zombie Horror"],
-];
-
-const TITLE_RULES: Array<[RegExp, string]> = [
-  [/\bsuspiria\b/i, "Giallo"],
-  [/\bscream\b/i, "Slasher"],
-  [/\bthe blair witch project\b/i, "Found Footage"],
-  [/\bthe thing\b/i, "Body Horror"],
-  [/\bthe witch\b/i, "Folk Horror"],
-  [/\bthe conjuring\b/i, "Supernatural Horror"],
-  [/\balien\b/i, "Sci-Fi Horror"],
-  [/\bhereditary\b/i, "Psychological Horror"],
-  [/\btrain to busan\b/i, "Zombie Horror"],
 ];
 
 function normalizeSignal(value: string | null | undefined) {
@@ -157,14 +188,10 @@ function escapeRegExp(value: string) {
 }
 
 export function getPrimarySubgenre(value: LibraryMovie | SubgenreMetadata) {
-  const title = "displayTitle" in value ? value.displayTitle : value.title;
   const overview = "synopsis" in value ? value.synopsis : value.overview;
   const genres = value.genres ?? [];
   const keywords = "keywords" in value ? value.keywords ?? [] : [];
   const collections = "collections" in value ? value.collections ?? [] : [];
-  const titleSignal = normalizeSignal(
-    [title, value.originalTitle].filter(Boolean).join(" ")
-  );
   const structuredSignal = normalizeSignal(
     [...genres, ...keywords, ...collections].join(" ")
   );
@@ -176,32 +203,25 @@ export function getPrimarySubgenre(value: LibraryMovie | SubgenreMetadata) {
     }
   }
 
-  for (const [pattern, label] of TITLE_RULES) {
-    if (pattern.test(titleSignal)) return label;
-  }
-
   const matches = SUBGENRE_RULES.map((rule) => {
     const structuredHits = rule.terms.filter((term) =>
       includesTerm(structuredSignal, term)
     ).length;
-    const genreHits =
-      rule.genreTerms?.filter((term) => includesTerm(structuredSignal, term))
-        .length ?? 0;
-    const overviewHits = rule.terms.filter((term) =>
-      includesTerm(overviewSignal, term)
-    ).length;
+    const overviewSupportHits =
+      structuredHits > 0
+        ? rule.terms.filter((term) => includesTerm(overviewSignal, term)).length
+        : 0;
 
     return {
       label: rule.label,
       structuredHits,
-      genreHits,
-      overviewHits,
-      score: structuredHits * 4 + genreHits * 3 + overviewHits,
+      overviewSupportHits,
+      score: structuredHits * 100 + overviewSupportHits * 10,
       priority: rule.priority,
     };
   })
-    .filter((match) => match.structuredHits > 0 || match.genreHits > 0)
-    .filter((match) => match.score >= 4)
+    .filter((match) => match.structuredHits > 0)
+    .filter((match) => match.score >= 100)
     .sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score;
       return b.priority - a.priority;

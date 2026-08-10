@@ -221,11 +221,17 @@ export async function GET(
  Boolean(name?.trim())
  ) ?? [];
 
+ const productionCountry = formatCountry(getProductionCountry(
+ details.origin_country,
+ details.production_countries
+ ));
+
  const distributor = await fetchDistributorFallback({
  imdbId,
  tmdbId: details.id,
  title: details.title,
  year: details.release_date?.slice(0, 4) ?? "",
+ originCountry: productionCountry,
  });
 
  const genres =
@@ -272,10 +278,7 @@ export async function GET(
 
  director,
 
- country: formatCountry(getProductionCountry(
- details.origin_country,
- details.production_countries
- )),
+ country: productionCountry,
 
  genres,
  subgenres: primarySubgenre ? [primarySubgenre] : [],
