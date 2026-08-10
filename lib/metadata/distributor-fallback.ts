@@ -81,13 +81,16 @@ export async function fetchWikipediaMovieSubgenreSignals({
     title,
     year,
   });
-  const wikipediaTitle = wikipediaTitles[0];
-  if (!wikipediaTitle) return [];
 
-  const wikitext = await fetchWikipediaWikitext(wikipediaTitle);
-  if (!wikitext) return [];
+  for (const wikipediaTitle of wikipediaTitles) {
+    const wikitext = await fetchWikipediaWikitext(wikipediaTitle);
+    if (!wikitext) continue;
 
-  return extractWikipediaSubgenreSignals(wikitext);
+    const signals = extractWikipediaSubgenreSignals(wikitext);
+    if (signals.length > 0) return signals;
+  }
+
+  return [];
 }
 
 async function findWikidataMovie({
