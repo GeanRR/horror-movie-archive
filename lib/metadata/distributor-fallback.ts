@@ -511,6 +511,9 @@ function chooseDistributorCandidate(
   );
   if (byWorldwide) return byWorldwide;
 
+  const byUnqualified = candidates.find((candidate) => !candidate.territory);
+  if (byUnqualified) return byUnqualified;
+
   return candidates[0];
 }
 
