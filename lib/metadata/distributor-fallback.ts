@@ -72,6 +72,26 @@ export async function fetchDistributorFallback({
   return fetchWikipediaInfoboxDistributor(titleSearchMatch, originCountry);
 }
 
+export async function fetchWikipediaMovieSubgenreSignals({
+  imdbId,
+  tmdbId,
+  title,
+  year,
+}: Omit<DistributorFallbackInput, "originCountry">): Promise<string[]> {
+  const wikipediaTitle = await findWikipediaMoviePageTitle({
+    imdbId,
+    tmdbId,
+    title,
+    year,
+  });
+  if (!wikipediaTitle) return [];
+
+  const wikitext = await fetchWikipediaWikitext(wikipediaTitle);
+  if (!wikitext) return [];
+
+  return extractWikipediaSubgenreSignals(wikitext);
+}
+
 async function findWikidataMovie({
   imdbId,
   tmdbId,
@@ -203,9 +223,14 @@ async function findWikipediaTitleMatch({
       );
 
     const verified: string[] = [];
+    const exactTitleYearMatches: string[] = [];
     for (const candidate of candidates) {
       const wikitext = await fetchWikipediaWikitext(candidate);
       if (!wikitext) continue;
+
+      if (isExactWikipediaMovieTitle(candidate, title, year)) {
+        exactTitleYearMatches.push(candidate);
+      }
 
       if (imdbId && !wikitext.includes(imdbId.replace(/^tt/, ""))) {
         continue;
@@ -214,10 +239,23 @@ async function findWikipediaTitleMatch({
       verified.push(candidate);
     }
 
-    return verified.length === 1 ? verified[0] : null;
+    if (verified.length === 1) return verified[0];
+    return exactTitleYearMatches.length === 1 ? exactTitleYearMatches[0] : null;
   } catch {
     return null;
   }
+}
+
+async function findWikipediaMoviePageTitle({
+  imdbId,
+  tmdbId,
+  title,
+  year,
+}: Omit<DistributorFallbackInput, "originCountry">) {
+  const wikidataMovie = await findWikidataMovie({ imdbId, tmdbId });
+  if (wikidataMovie?.enwikiTitle) return wikidataMovie.enwikiTitle;
+
+  return findWikipediaTitleMatch({ imdbId, title, year });
 }
 
 async function fetchWikipediaInfoboxDistributor(
@@ -420,6 +458,9 @@ function expandDistributorCandidates(value: string) {
 
 function cleanDistributorCandidate(value: string) {
   return stripReferencesAndComments(value)
+    .replace(/\{\{\s*ill\s*\|\s*([^|{}]+)(?:\|[^{}]*)?\}\}/gi, "$1")
+    .replace(/\{\{\s*interlanguage link\s*\|\s*([^|{}]+)(?:\|[^{}]*)?\}\}/gi, "$1")
+    .replace(/\{\{\s*film distribution\s*\|\s*([^|{}]+)(?:\|[^{}]*)?\}\}/gi, "$1")
     .replace(/\{\{nowrap\|([^{}]+)\}\}/gi, "$1")
     .replace(/\{\{flagicon\|[^{}]+\}\}/gi, "")
     .replace(/\{\{[^{}]+\}\}/g, "")
@@ -508,6 +549,69 @@ function normalizeComparableTerritory(value: string) {
     .replace(/[^a-z0-9]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function isExactWikipediaMovieTitle(
+  candidateTitle: string,
+  expectedTitle: string,
+  expectedYear: string
+) {
+  if (!expectedTitle || !expectedYear) return false;
+  const candidateYear = candidateTitle.match(/\((\d{4})\s+film\)/i)?.[1];
+  if (candidateYear !== expectedYear) return false;
+
+  return (
+    normalizeComparableTitle(candidateTitle.replace(/\s*\(\d{4}\s+film\)\s*$/i, "")) ===
+    normalizeComparableTitle(expectedTitle)
+  );
+}
+
+function normalizeComparableTitle(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/^the\s+/, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function extractWikipediaSubgenreSignals(wikitext: string) {
+  const signals = new Set<string>();
+  const cleaned = stripReferencesAndComments(wikitext);
+  const infobox = extractInfobox(cleaned);
+  const articleBody = infobox ? cleaned.replace(infobox, "") : cleaned;
+  const lead = articleBody.split(/\n==\s*Plot\s*==/i)[0] ?? "";
+
+  for (const match of lead.matchAll(/\[\[([^\]|#]+)(?:#[^\]|]+)?(?:\|([^\]]+))?\]\]/g)) {
+    const label = cleanWikiText(match[2] ?? match[1]);
+    if (isUsefulSubgenreSignal(label)) signals.add(label);
+  }
+
+  for (const match of cleaned.matchAll(/\[\[Category:([^\]|]+)(?:\|[^\]]*)?\]\]/gi)) {
+    const label = cleanWikiText(match[1]);
+    if (isUsefulSubgenreSignal(label)) signals.add(label);
+  }
+
+  return Array.from(signals);
+}
+
+function cleanWikiText(value: string) {
+  return value
+    .replace(/\{\{[^{}]+\}\}/g, "")
+    .replace(/'''?/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function isUsefulSubgenreSignal(value: string) {
+  const normalized = normalizeComparableTitle(value);
+  return (
+    /\b(horror|giallo|slasher|zombie|vampire|werewolf|screenlife|found footage|mockumentary|lovecraftian|eldritch|supernatural|body|possession|folk|gothic|creature|home invasion|torture|splatter|demon)\b/.test(
+      normalized
+    ) && !/\b(portal|template|stub|lists?|awards?)\b/.test(normalized)
+  );
 }
 
 function sparqlString(value: string) {

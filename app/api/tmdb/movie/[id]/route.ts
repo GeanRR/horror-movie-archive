@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { formatCountry } from "@/lib/constants/country-abbreviations";
-import { fetchDistributorFallback } from "@/lib/metadata/distributor-fallback";
+import {
+ fetchDistributorFallback,
+ fetchWikipediaMovieSubgenreSignals,
+} from "@/lib/metadata/distributor-fallback";
 import { getPrimarySubgenre } from "@/lib/movie-engines/subgenre-engine";
 import { fetchMovieRatings } from "@/lib/omdb/fetch-movie-ratings";
 import { TMDB_API_BASE } from "@/lib/tmdb/config";
@@ -234,6 +237,13 @@ export async function GET(
  originCountry: productionCountry,
  });
 
+ const wikipediaSubgenreSignals = await fetchWikipediaMovieSubgenreSignals({
+ imdbId,
+ tmdbId: details.id,
+ title: details.title,
+ year: details.release_date?.slice(0, 4) ?? "",
+ });
+
  const genres =
  details.genres?.map(
  (genre: { name: string }) => genre.name
@@ -252,7 +262,7 @@ export async function GET(
  title: details.title,
  originalTitle: details.original_title,
  genres,
- keywords,
+ keywords: [...keywords, ...wikipediaSubgenreSignals],
  collections,
  overview: details.overview ?? "",
  });
