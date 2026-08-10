@@ -2,7 +2,6 @@ import { prisma } from "@/lib/db/prisma";
 import type {
   PersistedWatchlist,
   PersistedWatchlistMovie,
-  WatchlistInput,
   WatchlistItemInput,
 } from "@/lib/watchlist/types";
 
@@ -51,13 +50,6 @@ function sanitizeMovieInput(movie: WatchlistItemInput): WatchlistItemInput | nul
     year: movie.year.trim(),
     posterUrl: movie.posterUrl?.trim() || null,
   };
-}
-
-function parseOptionalDate(value: string | undefined) {
-  if (!value) return undefined;
-
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? undefined : date;
 }
 
 function watchlistMovieFromItem(item: DbWatchlist["items"][number]): PersistedWatchlistMovie {
@@ -240,58 +232,6 @@ export async function reorderWatchlistMovie(
   ]);
 
   return getWatchlistOrThrow(watchlistId);
-}
-
-export async function migrateWatchlists(lists: WatchlistInput[]) {
-  const existingCount = await prisma.watchlist.count();
-  if (existingCount > 0) {
-    return getWatchlists();
-  }
-
-  const operations = lists
-    .map((list) => {
-      const name = list.name.trim();
-      if (!name) return null;
-
-      const seen = new Set<string>();
-      const movies = (list.movies ?? [])
-        .map(sanitizeMovieInput)
-        .filter((movie): movie is WatchlistItemInput => movie !== null)
-        .filter((movie) => {
-          const identity = movieIdentity(movie);
-          if (seen.has(identity)) return false;
-          seen.add(identity);
-          return true;
-        });
-
-      return prisma.watchlist.create({
-        data: {
-          id: list.id,
-          name,
-          createdAt: parseOptionalDate(list.createdAt),
-          updatedAt: parseOptionalDate(list.updatedAt),
-          items: {
-            create: movies.map((movie, index) => ({
-              tmdbId: movie.tmdbId,
-              imdbId: movie.imdbId,
-              displayTitle: movie.displayTitle,
-              year: movie.year,
-              posterUrl: movie.posterUrl,
-              position: index,
-            })),
-          },
-        },
-      });
-    })
-    .filter((operation): operation is NonNullable<typeof operation> =>
-      operation !== null
-    );
-
-  if (operations.length > 0) {
-    await prisma.$transaction(operations);
-  }
-
-  return getWatchlists();
 }
 
 async function getWatchlistOrThrow(id: string) {

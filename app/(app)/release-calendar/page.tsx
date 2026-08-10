@@ -22,8 +22,6 @@ const MONTHS = [
   "December",
 ] as const;
 
-const RELEASE_CALENDAR_STORAGE_KEY = "hma-release-calendar-movies";
-
 type ReleaseType = "Theatrical" | "Streaming" | "Digital / VOD";
 
 type ReleaseEntry = {
@@ -64,21 +62,6 @@ function watchlistMovieKey(movie: WatchlistMovie) {
   if (movie.tmdbId !== null) return `tmdb-${movie.tmdbId}`;
   if (movie.imdbId) return `imdb-${movie.imdbId}`;
   return `${movie.displayTitle.toLowerCase()}-${movie.year}`;
-}
-
-function readStoredCalendarMovies() {
-  if (typeof window === "undefined") return [];
-
-  try {
-    const parsed = JSON.parse(
-      window.localStorage.getItem(RELEASE_CALENDAR_STORAGE_KEY) ?? "[]"
-    ) as unknown;
-
-    return Array.isArray(parsed) ? (parsed as WatchlistMovie[]) : [];
-  } catch {
-    window.localStorage.removeItem(RELEASE_CALENDAR_STORAGE_KEY);
-    return [];
-  }
 }
 
 function releaseTypeDates(movie: WatchlistMovie) {
@@ -214,7 +197,14 @@ export default function ReleaseCalendarPage() {
   const [calendarMovies, setCalendarMovies] = useState<WatchlistMovie[]>([]);
 
   useEffect(() => {
-    setCalendarMovies(readStoredCalendarMovies());
+    fetch("/api/release-calendar", { cache: "no-store" })
+      .then((response) => response.json())
+      .then((data: { ok?: boolean; movies?: WatchlistMovie[] }) => {
+        if (data.ok && Array.isArray(data.movies)) {
+          setCalendarMovies(data.movies);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -231,10 +221,18 @@ export default function ReleaseCalendarPage() {
       }
 
       const nextMovies = Array.from(moviesByKey.values());
-      window.localStorage.setItem(
-        RELEASE_CALENDAR_STORAGE_KEY,
-        JSON.stringify(nextMovies)
-      );
+      fetch("/api/release-calendar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ movies: incomingMovies }),
+      })
+        .then((response) => response.json())
+        .then((data: { ok?: boolean; movies?: WatchlistMovie[] }) => {
+          if (data.ok && Array.isArray(data.movies)) {
+            setCalendarMovies(data.movies);
+          }
+        })
+        .catch(() => {});
       return nextMovies;
     });
   }, [lists]);

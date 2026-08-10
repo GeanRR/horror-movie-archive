@@ -1,5 +1,6 @@
 import { ImportCsvSection } from "@/components/settings/import-csv-section";
 import { BackupRestoreSection } from "@/components/settings/backup-restore-section";
+import { LogoutSection } from "@/components/settings/logout-section";
 import { StremioWatchedSyncSection } from "@/components/settings/stremio-watched-sync-section";
 
 export default function SettingsPage() {
@@ -41,6 +42,18 @@ export default function SettingsPage() {
  <ImportCsvSection />
  <BackupRestoreSection />
  </div>
+ </section>
+
+ <section className="space-y-4 rounded-[24px] bg-black p-6 shadow-[0_18px_60px_rgba(0,0,0,0.35)]">
+ <div>
+ <p className="font-sans text-sm text-[#6f6c7a]">
+ End this browser session.
+ </p>
+ <h2 className="archive-anton mt-2 text-4xl uppercase leading-none text-[#e9e3d4] md:text-5xl">
+ Security
+ </h2>
+ </div>
+ <LogoutSection />
  </section>
  </div>
  </div>

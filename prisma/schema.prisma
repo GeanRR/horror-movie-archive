@@ -11,6 +11,45 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+model Movie {
+  id                      String   @id @default(cuid())
+  tmdbId                  Int      @unique
+  imdbId                  String?  @unique
+  displayTitle            String
+  originalTitle           String
+  titlePt                 String
+  year                    String
+  posterUrl               String?
+  director                String
+  country                 String
+  distributor             String
+  runtime                 Int?
+  releaseDate             String
+  synopsis                String
+  cast                    Json
+  crew                    Json
+  genres                  Json
+  subgenres               Json
+  imdbScore               Float?
+  rottenTomatoesScore     Float?
+  reviewScore             Float?
+  stars                   Int
+  badgeId                 String?
+  badgeOverrideEnabled    Boolean  @default(false)
+  watchedDate             String
+  rewatchHistory          Json
+  bestOfYear              Boolean  @default(false)
+  assignedLists           Json
+  metadataSourceSnapshot  String?
+  metadataLastRefreshedAt String?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  @@index([year])
+  @@index([bestOfYear])
+  @@index([badgeId])
+}
+
 model Watchlist {
   id        String          @id @default(cuid())
   name      String
@@ -61,6 +100,38 @@ model AwaitingReviewItem {
 
   @@index([status, watchedAt])
   @@index([tmdbId])
+}
+
+model ReleaseCalendarItem {
+  id                      String   @id @default(cuid())
+  tmdbId                  Int?
+  imdbId                  String?
+  displayTitle            String
+  originalTitle           String
+  titlePt                 String
+  year                    String
+  posterUrl               String?
+  director                String
+  country                 String
+  distributor             String
+  runtime                 Int?
+  releaseDate             String
+  synopsis                String
+  cast                    Json
+  crew                    Json
+  genres                  Json
+  subgenres               Json
+  imdbScore               Float?
+  rottenTomatoesScore     Float?
+  releaseDates            Json
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+  metadataSourceSnapshot  String?
+  metadataLastRefreshedAt String?
+
+  @@unique([tmdbId])
+  @@unique([imdbId])
+  @@index([year])
 }
 
 model StremioWatchedSyncState {

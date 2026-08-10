@@ -45,11 +45,3 @@ export type WatchlistItemInput = {
   year: string;
   posterUrl?: string | null;
 };
-
-export type WatchlistInput = {
-  id?: string;
-  name: string;
-  movies?: WatchlistItemInput[];
-  createdAt?: string;
-  updatedAt?: string;
-};

@@ -4,6 +4,7 @@ import {
   runStremioWatchedSync,
 } from "@/lib/stremio/watched-sync";
 import type { ExistingMovieIdentity } from "@/lib/awaiting-review/db";
+import { getMovieIdentities } from "@/lib/movies/db";
 
 export async function GET() {
   try {
@@ -50,9 +51,11 @@ export async function POST(request: Request) {
       existingMovies?: unknown;
     } | null;
 
-    const result = await runStremioWatchedSync(
-      parseExistingMovies(body?.existingMovies)
-    );
+    const existingMovies = body?.existingMovies
+      ? parseExistingMovies(body.existingMovies)
+      : await getMovieIdentities();
+
+    const result = await runStremioWatchedSync(existingMovies);
     return NextResponse.json(result, { status: result.ok ? 200 : 503 });
   } catch {
     return NextResponse.json(

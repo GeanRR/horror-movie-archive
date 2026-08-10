@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 import { calculateBadgeId } from "@/lib/movie-engines/badge-engine";
 import {
   dedupeBestOfYearCrowns,
@@ -467,6 +466,10 @@ type MovieState = {
   movies: LibraryMovie[];
   lists: CustomMovieList[];
 
+  loadMovies: () => Promise<void>;
+
+  replaceMovies: (movies: LibraryMovie[]) => void;
+
   addMovie: (movie: LibraryMovie) => void;
 
   updateMovie: (id: string, updates: Partial<LibraryMovie>) => void;
@@ -488,11 +491,49 @@ type MovieState = {
   replaceLists: (lists: CustomMovieList[]) => void;
 };
 
+async function saveMovieToServer(movie: LibraryMovie) {
+  await fetch("/api/movies", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ movie }),
+  });
+}
+
+async function updateMovieOnServer(
+  id: string,
+  updates: Partial<LibraryMovie>
+) {
+  await fetch(`/api/movies/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ updates }),
+  });
+}
+
+async function deleteMovieFromServer(id: string) {
+  await fetch(`/api/movies/${id}`, {
+    method: "DELETE",
+  });
+}
+
 export const useMovieStore = create<MovieState>()(
-  persist(
     (set) => ({
       movies: [],
       lists: [],
+
+      loadMovies: async () => {
+        const response = await fetch("/api/movies", { cache: "no-store" });
+        const data = (await response.json().catch(() => null)) as {
+          ok?: boolean;
+          movies?: unknown;
+        } | null;
+
+        if (data?.ok) {
+          set({ movies: normalizeMovieList(data.movies) });
+        }
+      },
+
+      replaceMovies: (movies) => set({ movies: normalizeMovieList(movies) }),
 
       addMovie: (movie) =>
         set((state) => {
@@ -505,6 +546,8 @@ export const useMovieStore = create<MovieState>()(
           if (state.movies.some((current) => isSameMovie(current, normalizedMovie))) {
             return state;
           }
+
+          void saveMovieToServer(normalizedMovie);
 
           const movies = [
             normalizedMovie,
@@ -540,6 +583,8 @@ export const useMovieStore = create<MovieState>()(
             return { movies };
           }
 
+          void updateMovieOnServer(id, updatedMovie);
+
           return {
             movies: dedupeBestOfYearCrowns(
               enforceBestOfYearCrown(movies, updatedMovie)
@@ -548,11 +593,15 @@ export const useMovieStore = create<MovieState>()(
         }),
 
       removeMovie: (id) =>
-        set((state) => ({
+        set((state) => {
+          void deleteMovieFromServer(id);
+
+          return {
           movies: state.movies.filter(
             (movie) => movie.id !== id
           ),
-        })),
+          };
+        }),
 
       createList: (list) => {
         const now = new Date().toISOString();
@@ -684,21 +733,5 @@ export const useMovieStore = create<MovieState>()(
               .filter((movie): movie is WatchlistMovie => movie !== null),
           })),
         })),
-    }),
-    {
-      name: "hma-movies",
-      merge: (persistedState, currentState) => {
-        const persisted = asRecord(persistedState);
-
-        const movies = normalizeMovieList(persisted?.movies);
-
-        return {
-          ...currentState,
-          ...(persisted ?? {}),
-          movies,
-          lists: normalizeCustomMovieLists(persisted?.lists, movies),
-        };
-      },
-    }
-  )
+    })
 );

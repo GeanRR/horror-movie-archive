@@ -24,14 +24,11 @@ import {
 import type {
   PersistedWatchlist,
   WatchlistItemInput,
-  WatchlistInput,
 } from "@/lib/watchlist/types";
 import type {
   WatchlistSearchResponse,
   WatchlistSearchResult,
 } from "@/lib/watchlist/search-types";
-
-const WATCHLIST_DB_MIGRATION_FLAG = "hma-watchlists-db-migrated-v1";
 
 type ListModalState =
   | { mode: "create"; list?: undefined }
@@ -62,39 +59,6 @@ function toWatchlistItemInput(movie: WatchlistMovie): WatchlistItemInput {
   };
 }
 
-function readLegacyWatchlists(): WatchlistInput[] {
-  if (typeof window === "undefined") return [];
-
-  try {
-    const raw = window.localStorage.getItem("hma-movies");
-    if (!raw) return [];
-
-    const payload = JSON.parse(raw) as {
-      state?: {
-        lists?: Array<{
-          id?: string;
-          name?: string;
-          movies?: WatchlistMovie[];
-          createdAt?: string;
-          updatedAt?: string;
-        }>;
-      };
-    };
-
-    return (payload.state?.lists ?? [])
-      .filter((list) => typeof list.name === "string" && list.name.trim())
-      .map((list) => ({
-        id: list.id,
-        name: list.name ?? "",
-        createdAt: list.createdAt,
-        updatedAt: list.updatedAt,
-        movies: (list.movies ?? []).map(toWatchlistItemInput),
-      }));
-  } catch {
-    return [];
-  }
-}
-
 async function requestWatchlists(): Promise<CustomMovieList[]> {
   const response = await fetch("/api/watchlists", { cache: "no-store" });
   const data = (await response.json()) as
@@ -105,24 +69,6 @@ async function requestWatchlists(): Promise<CustomMovieList[]> {
     throw new Error(data.ok === false ? data.error : "Failed to load lists.");
   }
 
-  return toCustomLists(data.lists);
-}
-
-async function requestWatchlistMigration(): Promise<CustomMovieList[]> {
-  const response = await fetch("/api/watchlists/migrate", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ lists: readLegacyWatchlists() }),
-  });
-  const data = (await response.json()) as
-    | { ok: true; lists: PersistedWatchlist[] }
-    | { ok: false; error: string };
-
-  if (!response.ok || !data.ok) {
-    throw new Error(data.ok === false ? data.error : "Failed to migrate lists.");
-  }
-
-  window.localStorage.setItem(WATCHLIST_DB_MIGRATION_FLAG, "true");
   return toCustomLists(data.lists);
 }
 
@@ -659,11 +605,7 @@ export default function WatchlistPage() {
       setListError("");
 
       try {
-        const migrated =
-          window.localStorage.getItem(WATCHLIST_DB_MIGRATION_FLAG) === "true";
-        const nextLists = migrated
-          ? await requestWatchlists()
-          : await requestWatchlistMigration();
+        const nextLists = await requestWatchlists();
 
         if (cancelled) return;
         syncLists(nextLists);
