@@ -38,8 +38,17 @@ export type MovieDetailsResponse = {
   error?: string;
 };
 
-export async function fetchMovieDetails(tmdbId: number) {
-  const response = await fetch(`/api/tmdb/movie/${tmdbId}`);
+export async function fetchMovieDetails(
+  tmdbId: number,
+  mediaType: "movie" | "tv" = "movie"
+) {
+  const params = new URLSearchParams();
+  if (mediaType === "tv") params.set("mediaType", mediaType);
+
+  const query = params.toString();
+  const response = await fetch(
+    `/api/tmdb/movie/${tmdbId}${query ? `?${query}` : ""}`
+  );
 
   const data = (await response.json()) as MovieDetailsResponse;
 

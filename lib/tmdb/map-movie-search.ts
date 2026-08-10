@@ -2,6 +2,7 @@ import type { TmdbMovieSearchItem } from "@/types/tmdb";
 
 type TmdbApiMovie = {
   id: number;
+  media_type?: "movie";
   title?: string;
   original_title?: string;
   release_date?: string;
@@ -15,6 +16,7 @@ export function mapTmdbApiMovie(movie: TmdbApiMovie): TmdbMovieSearchItem {
 
   return {
     tmdbId: movie.id,
+    mediaType: "movie",
     title: movie.title?.trim() || movie.original_title?.trim() || "Untitled",
     originalTitle: movie.original_title?.trim() || movie.title?.trim() || "",
     releaseYear,

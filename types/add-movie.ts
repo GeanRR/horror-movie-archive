@@ -11,6 +11,7 @@ export type AddMoviePanelState = (typeof ADD_MOVIE_PANEL_STATES)[number];
 /** TMDB search hit */
 export type AddMovieSearchResult = {
   tmdbId: number;
+  mediaType?: "movie" | "tv";
   title: string;
   originalTitle: string;
   releaseYear: string;

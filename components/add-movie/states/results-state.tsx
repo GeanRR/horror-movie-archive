@@ -46,7 +46,7 @@ export function ResultsState({
  role="list"
  >
  {results.map((result) => (
- <li key={result.tmdbId} role="listitem">
+ <li key={`${result.mediaType ?? "movie"}-${result.tmdbId}`} role="listitem">
  <button
  type="button"
  onClick={() => onSelect(result)}

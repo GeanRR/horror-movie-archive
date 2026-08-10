@@ -1,6 +1,7 @@
 /** TMDB movie search item — returned by /api/tmdb/search */
 export type TmdbMovieSearchItem = {
   tmdbId: number;
+  mediaType?: "movie" | "tv";
   title: string;
   originalTitle: string;
   releaseYear: string;

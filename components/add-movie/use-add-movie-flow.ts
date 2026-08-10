@@ -194,7 +194,7 @@ export function useAddMovieFlow(open: boolean) {
  const draft = mapSearchResultToDraft(result);
 
  try {
- const details = await fetchMovieDetails(result.tmdbId);
+ const details = await fetchMovieDetails(result.tmdbId, result.mediaType);
 
  draft.director = details.director;
  draft.titlePt = details.titlePt;
