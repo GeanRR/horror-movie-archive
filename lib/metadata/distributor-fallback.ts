@@ -36,19 +36,6 @@ export async function fetchDistributorFallback({
   year,
   originCountry,
 }: DistributorFallbackInput): Promise<string | null> {
-  const wikidataMovie = await findWikidataMovie({ imdbId, tmdbId });
-
-  if (wikidataMovie) {
-    const wikidataDistributor = await fetchWikidataDistributor(
-      wikidataMovie.itemId,
-      originCountry
-    );
-
-    if (wikidataDistributor) {
-      return wikidataDistributor;
-    }
-  }
-
   const wikipediaTitles = await findWikipediaMoviePageTitles({
     imdbId,
     tmdbId,
@@ -64,6 +51,19 @@ export async function fetchDistributorFallback({
 
     if (wikipediaDistributor) {
       return wikipediaDistributor;
+    }
+  }
+
+  const wikidataMovie = await findWikidataMovie({ imdbId, tmdbId });
+
+  if (wikidataMovie) {
+    const wikidataDistributor = await fetchWikidataDistributor(
+      wikidataMovie.itemId,
+      originCountry
+    );
+
+    if (wikidataDistributor) {
+      return wikidataDistributor;
     }
   }
 
