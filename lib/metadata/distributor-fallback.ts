@@ -483,7 +483,7 @@ function dedupeDistributorCandidates(candidates: DistributorCandidate[]) {
 }
 
 function isLikelyStreamingOrHomeVideoDistributor(value: string) {
-  return /\b(netflix|prime video|amazon video|amazon prime|hulu|disney\+?|hbo max|max|paramount\+|peacock|shudder|tubi|pluto tv|crackle|roku|apple tv\+?|itunes|google play|youtube|vudu|fandango at home|criterion channel|mubi|kanopy|home video|video|dvd|blu-ray)\b/i.test(
+  return /\b(netflix|prime video|amazon video|amazon prime|hulu|disney\+?|hbo max|max|paramount\+|peacock|shudder|tubi|pluto tv|crackle|roku|apple tv\+?|itunes|google play|youtube|vudu|fandango at home|criterion channel|mubi|kanopy|skyshowtime|now tv|starz|home video|video|dvd|blu-ray)\b/i.test(
     value
   );
 }
