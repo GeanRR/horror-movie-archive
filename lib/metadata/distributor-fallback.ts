@@ -40,7 +40,8 @@ export async function fetchDistributorFallback({
 
   if (wikidataMovie) {
     const wikidataDistributor = await fetchWikidataDistributor(
-      wikidataMovie.itemId
+      wikidataMovie.itemId,
+      originCountry
     );
 
     if (wikidataDistributor) {
@@ -132,35 +133,53 @@ async function findWikidataMovie({
   return null;
 }
 
-async function fetchWikidataDistributor(itemId: string) {
+async function fetchWikidataDistributor(itemId: string, originCountry?: string) {
   const query = `
-    SELECT ?distributorLabel WHERE {
-      wd:${itemId} wdt:P750 ?distributor.
+    SELECT ?distributorLabel ?territoryLabel WHERE {
+      wd:${itemId} p:P750 ?statement.
+      ?statement ps:P750 ?distributor.
+      OPTIONAL { ?statement pq:P17 ?territory. }
+      OPTIONAL { ?statement pq:P1001 ?territory. }
       SERVICE wikibase:label {
         bd:serviceParam wikibase:language "en".
       }
     }
-    LIMIT 5
+    LIMIT 20
   `;
 
   const bindings = await fetchWikidataBindings(query);
-  const labels = bindings
-    .map((binding: WikidataBinding) => binding.distributorLabel?.value)
-    .filter((value: string | undefined): value is string =>
-      Boolean(value?.trim())
-    )
-    .filter(
-      (value: string, index: number, values: string[]) =>
-        values.findIndex(
-          (candidate) => candidate.toLowerCase() === value.toLowerCase()
-        ) === index
-    );
+  const candidates = dedupeDistributorCandidates(
+    bindings
+      .map((binding: WikidataBinding) => {
+        const name = normalizeDistributorNameOnly(
+          binding.distributorLabel?.value
+        );
+        if (!name) return null;
 
-  if (labels.length !== 1) {
-    return null;
-  }
+        return {
+          name,
+          territory: binding.territoryLabel?.value?.trim() ?? "",
+        } satisfies DistributorCandidate;
+      })
+      .filter(
+        (
+          candidate: DistributorCandidate | null
+        ): candidate is DistributorCandidate => Boolean(candidate)
+      )
+  );
 
-  return normalizeDistributor(labels[0]);
+  if (candidates.length === 0) return null;
+
+  const theatricalCandidates =
+    candidates.length > 1
+      ? candidates.filter(
+          (candidate) => !isLikelyStreamingOrHomeVideoDistributor(candidate.name)
+        )
+      : candidates;
+  const usableCandidates =
+    theatricalCandidates.length > 0 ? theatricalCandidates : candidates;
+
+  return chooseDistributorCandidate(usableCandidates, originCountry)?.name ?? null;
 }
 
 async function fetchWikidataBindings(query: string) {
@@ -445,6 +464,28 @@ function parseDistributorCandidate(value: string): DistributorCandidate | null {
   if (!isValidDistributorValue(name)) return null;
 
   return { name, territory };
+}
+
+function normalizeDistributorNameOnly(value: string | null | undefined) {
+  return normalizeDistributor(value);
+}
+
+function dedupeDistributorCandidates(candidates: DistributorCandidate[]) {
+  return candidates.filter(
+    (candidate, index, values) =>
+      values.findIndex(
+        (value) =>
+          value.name.toLowerCase() === candidate.name.toLowerCase() &&
+          normalizeComparableTerritory(value.territory) ===
+            normalizeComparableTerritory(candidate.territory)
+      ) === index
+  );
+}
+
+function isLikelyStreamingOrHomeVideoDistributor(value: string) {
+  return /\b(netflix|prime video|amazon video|amazon prime|hulu|disney\+?|hbo max|max|paramount\+|peacock|shudder|tubi|pluto tv|crackle|roku|apple tv\+?|itunes|google play|youtube|vudu|fandango at home|criterion channel|mubi|kanopy|home video|video|dvd|blu-ray)\b/i.test(
+    value
+  );
 }
 
 function chooseDistributorCandidate(
