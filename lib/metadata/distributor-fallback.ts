@@ -39,17 +39,6 @@ export async function fetchDistributorFallback({
   const wikidataMovie = await findWikidataMovie({ imdbId, tmdbId });
 
   if (wikidataMovie) {
-    if (wikidataMovie.enwikiTitle) {
-      const wikipediaDistributor = await fetchWikipediaInfoboxDistributor(
-        wikidataMovie.enwikiTitle,
-        originCountry
-      );
-
-      if (wikipediaDistributor) {
-        return wikipediaDistributor;
-      }
-    }
-
     const wikidataDistributor = await fetchWikidataDistributor(
       wikidataMovie.itemId
     );
@@ -59,17 +48,25 @@ export async function fetchDistributorFallback({
     }
   }
 
-  const titleSearchMatch = await findWikipediaTitleMatch({
+  const wikipediaTitles = await findWikipediaMoviePageTitles({
     imdbId,
+    tmdbId,
     title,
     year,
   });
 
-  if (!titleSearchMatch) {
-    return null;
+  for (const wikipediaTitle of wikipediaTitles) {
+    const wikipediaDistributor = await fetchWikipediaInfoboxDistributor(
+      wikipediaTitle,
+      originCountry
+    );
+
+    if (wikipediaDistributor) {
+      return wikipediaDistributor;
+    }
   }
 
-  return fetchWikipediaInfoboxDistributor(titleSearchMatch, originCountry);
+  return null;
 }
 
 export async function fetchWikipediaMovieSubgenreSignals({
@@ -78,12 +75,13 @@ export async function fetchWikipediaMovieSubgenreSignals({
   title,
   year,
 }: Omit<DistributorFallbackInput, "originCountry">): Promise<string[]> {
-  const wikipediaTitle = await findWikipediaMoviePageTitle({
+  const wikipediaTitles = await findWikipediaMoviePageTitles({
     imdbId,
     tmdbId,
     title,
     year,
   });
+  const wikipediaTitle = wikipediaTitles[0];
   if (!wikipediaTitle) return [];
 
   const wikitext = await fetchWikipediaWikitext(wikipediaTitle);
@@ -246,16 +244,30 @@ async function findWikipediaTitleMatch({
   }
 }
 
-async function findWikipediaMoviePageTitle({
+async function findWikipediaMoviePageTitles({
   imdbId,
   tmdbId,
   title,
   year,
 }: Omit<DistributorFallbackInput, "originCountry">) {
+  const titles: string[] = [];
   const wikidataMovie = await findWikidataMovie({ imdbId, tmdbId });
-  if (wikidataMovie?.enwikiTitle) return wikidataMovie.enwikiTitle;
+  if (wikidataMovie?.enwikiTitle) titles.push(wikidataMovie.enwikiTitle);
 
-  return findWikipediaTitleMatch({ imdbId, title, year });
+  for (const candidate of [title, year ? `${title} (${year} film)` : ""]) {
+    if (!candidate) continue;
+    const wikitext = await fetchWikipediaWikitext(candidate);
+    if (wikitext && isLikelyRequestedMoviePage(wikitext, imdbId, year)) {
+      titles.push(candidate);
+    }
+  }
+
+  const titleSearchMatch = await findWikipediaTitleMatch({ imdbId, title, year });
+  if (titleSearchMatch) titles.push(titleSearchMatch);
+
+  return Array.from(
+    new Map(titles.map((candidate) => [candidate.toLowerCase(), candidate])).values()
+  );
 }
 
 async function fetchWikipediaInfoboxDistributor(
@@ -335,6 +347,21 @@ function extractInfobox(wikitext: string) {
   }
 
   return null;
+}
+
+function isLikelyRequestedMoviePage(
+  wikitext: string,
+  imdbId: string | undefined,
+  year: string
+) {
+  const infobox = extractInfobox(wikitext);
+  if (!infobox) return false;
+
+  if (imdbId && wikitext.includes(imdbId.replace(/^tt/, ""))) {
+    return true;
+  }
+
+  return Boolean(year && infobox.includes(year));
 }
 
 function extractInfoboxField(infobox: string, fieldNames: string[]) {

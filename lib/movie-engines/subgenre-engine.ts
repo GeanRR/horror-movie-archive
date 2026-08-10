@@ -13,6 +13,7 @@ type SubgenreRule = {
   label: string;
   priority: number;
   terms: string[];
+  supportTerms?: string[];
 };
 
 const SUBGENRE_RULES: SubgenreRule[] = [
@@ -116,6 +117,16 @@ const SUBGENRE_RULES: SubgenreRule[] = [
       "sci fi horror",
       "alien horror",
     ],
+    supportTerms: [
+      "science fiction",
+      "sci-fi",
+      "alien invasion",
+      "extraterrestrial",
+      "martian",
+      "apocalyptic",
+      "post-apocalyptic",
+      "science fiction thriller",
+    ],
   },
   {
     label: "Psychological Horror",
@@ -126,6 +137,7 @@ const SUBGENRE_RULES: SubgenreRule[] = [
     label: "Creature Feature",
     priority: 76,
     terms: ["creature feature", "monster movie", "animal attack horror"],
+    supportTerms: ["giant monster", "kaiju", "animal attack"],
   },
   {
     label: "Home Invasion",
@@ -155,7 +167,13 @@ const SUBGENRE_RULES: SubgenreRule[] = [
   {
     label: "Horror Comedy",
     priority: 68,
-    terms: ["horror comedy", "comedy horror", "horror-comedy", "splatstick"],
+    terms: [
+      "horror comedy",
+      "comedy horror",
+      "horror-comedy",
+      "dark horror comedy",
+      "splatstick",
+    ],
   },
 ];
 
@@ -207,21 +225,25 @@ export function getPrimarySubgenre(value: LibraryMovie | SubgenreMetadata) {
     const structuredHits = rule.terms.filter((term) =>
       includesTerm(structuredSignal, term)
     ).length;
+    const supportHits =
+      rule.supportTerms?.filter((term) => includesTerm(structuredSignal, term))
+        .length ?? 0;
     const overviewSupportHits =
-      structuredHits > 0
+      structuredHits > 0 || supportHits > 0
         ? rule.terms.filter((term) => includesTerm(overviewSignal, term)).length
         : 0;
 
     return {
       label: rule.label,
       structuredHits,
+      supportHits,
       overviewSupportHits,
-      score: structuredHits * 100 + overviewSupportHits * 10,
+      score: structuredHits * 100 + supportHits * 35 + overviewSupportHits * 10,
       priority: rule.priority,
     };
   })
-    .filter((match) => match.structuredHits > 0)
-    .filter((match) => match.score >= 100)
+    .filter((match) => match.structuredHits > 0 || match.supportHits > 0)
+    .filter((match) => match.score >= 70)
     .sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score;
       return b.priority - a.priority;
