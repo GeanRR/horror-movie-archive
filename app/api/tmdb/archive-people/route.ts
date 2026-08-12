@@ -9,6 +9,7 @@ type MoviePayload = {
  posterUrl: string | null;
  year: number | null;
  reviewScore: number | null;
+ genres?: string[];
 };
 
 type TmdbCastPerson = {
@@ -17,6 +18,7 @@ type TmdbCastPerson = {
  gender?: number;
  known_for_department?: string;
  profile_path?: string | null;
+ character?: string | null;
 };
 
 type TmdbCrewPerson = {
@@ -37,6 +39,16 @@ type PersonAggregate = {
 };
 
 const PROFILE_BASE_URL = "https://image.tmdb.org/t/p/w342";
+const NON_VISUAL_LIVE_ACTION_CREDIT_PATTERNS = [
+ /\(\s*voice\s*\)/i,
+ /\bvoice\b/i,
+ /\badditional\s+voices?\b/i,
+ /\bvocal\s+effects?\b/i,
+ /\bspecial\s+vocal\s+effects?\b/i,
+ /\bcreature\s+vocals?\b/i,
+ /\badr\b/i,
+ /\bloop\s+group\b/i,
+];
 
 function aggregatePerson(
  map: Map<number, PersonAggregate>,
@@ -136,6 +148,17 @@ function topPeople(map: Map<number, PersonAggregate>, totalMovies: number, limit
  .filter((person): person is NonNullable<ReturnType<typeof serializePerson>> => Boolean(person));
 }
 
+function isAnimationMovie(movie: MoviePayload) {
+ return (movie.genres ?? []).some((genre) => genre.trim().toLowerCase() === "animation");
+}
+
+function isNonVisualLiveActionCastCredit(person: TmdbCastPerson) {
+ const character = person.character?.trim();
+ if (!character) return false;
+
+ return NON_VISUAL_LIVE_ACTION_CREDIT_PATTERNS.some((pattern) => pattern.test(character));
+}
+
 export async function POST(request: NextRequest) {
  const apiKey = getTmdbApiKey();
  if (!apiKey) {
@@ -189,6 +212,9 @@ export async function POST(request: NextRequest) {
  person.known_for_department &&
  person.known_for_department !== "Acting"
  ) {
+ continue;
+ }
+ if (!isAnimationMovie(movie) && isNonVisualLiveActionCastCredit(person)) {
  continue;
  }
  if (person.gender === 2) aggregatePerson(actorMap, person, "Acting", movie);

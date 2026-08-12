@@ -1014,6 +1014,7 @@ export default function DashboardPage() {
  posterUrl: movie.posterUrl ?? null,
  year: releaseYear(movie),
  reviewScore: movie.reviewScore,
+ genres: movie.genres,
  })),
  }),
  signal: controller.signal,
