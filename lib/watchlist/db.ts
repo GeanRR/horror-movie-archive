@@ -8,6 +8,7 @@ import type {
 type DbWatchlist = {
   id: string;
   name: string;
+  position: number;
   createdAt: Date;
   updatedAt: Date;
   items: Array<{
@@ -85,6 +86,7 @@ function serializeWatchlist(list: DbWatchlist): PersistedWatchlist {
   return {
     id: list.id,
     name: list.name,
+    position: list.position,
     movies: [...list.items]
       .sort((a, b) => a.position - b.position)
       .map(watchlistMovieFromItem),
@@ -95,7 +97,7 @@ function serializeWatchlist(list: DbWatchlist): PersistedWatchlist {
 
 export async function getWatchlists(): Promise<PersistedWatchlist[]> {
   const lists = await prisma.watchlist.findMany({
-    orderBy: { createdAt: "desc" },
+    orderBy: [{ position: "asc" }, { createdAt: "desc" }],
     include: {
       items: {
         orderBy: { position: "asc" },
@@ -107,8 +109,11 @@ export async function getWatchlists(): Promise<PersistedWatchlist[]> {
 }
 
 export async function createWatchlist(name: string) {
+  const minPosition = await prisma.watchlist
+    .aggregate({ _min: { position: true } })
+    .then((result) => result._min.position ?? 0);
   const list = await prisma.watchlist.create({
-    data: { name: name.trim() },
+    data: { name: name.trim(), position: minPosition - 1 },
     include: { items: true },
   });
 
@@ -131,6 +136,38 @@ export async function updateWatchlist(id: string, name: string) {
 
 export async function deleteWatchlist(id: string) {
   await prisma.watchlist.delete({ where: { id } });
+}
+
+export async function reorderWatchlist(
+  id: string,
+  direction: "up" | "down"
+) {
+  const lists = await prisma.watchlist.findMany({
+    orderBy: [{ position: "asc" }, { createdAt: "desc" }],
+  });
+
+  const currentIndex = lists.findIndex((list) => list.id === id);
+  const nextIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+
+  if (currentIndex < 0 || nextIndex < 0 || nextIndex >= lists.length) {
+    return getWatchlists();
+  }
+
+  const current = lists[currentIndex];
+  const next = lists[nextIndex];
+
+  await prisma.$transaction([
+    prisma.watchlist.update({
+      where: { id: current.id },
+      data: { position: next.position },
+    }),
+    prisma.watchlist.update({
+      where: { id: next.id },
+      data: { position: current.position },
+    }),
+  ]);
+
+  return getWatchlists();
 }
 
 export async function addMovieToWatchlist(

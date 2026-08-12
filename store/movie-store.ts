@@ -100,6 +100,7 @@ export type WatchlistMovie = {
 export type CustomMovieList = {
   id: string;
   name: string;
+  position?: number;
   movies: WatchlistMovie[];
   createdAt: string;
   updatedAt: string;

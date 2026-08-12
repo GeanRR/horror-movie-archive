@@ -33,6 +33,7 @@ export type PersistedWatchlistMovie = {
 export type PersistedWatchlist = {
   id: string;
   name: string;
+  position: number;
   movies: PersistedWatchlistMovie[];
   createdAt: string;
   updatedAt: string;

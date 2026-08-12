@@ -300,11 +300,13 @@ function ListFormModal({
 
 function AddMoviesModal({
   list,
+  lists,
   libraryMovies,
   onClose,
   onAddMovie,
 }: {
-  list: CustomMovieList;
+  list: CustomMovieList | null;
+  lists: CustomMovieList[];
   libraryMovies: LibraryMovie[];
   onClose: () => void;
   onAddMovie: (listId: string, movie: WatchlistMovie) => Promise<void>;
@@ -363,14 +365,19 @@ function AddMoviesModal({
     };
   }, [query]);
 
-  const handleAdd = async (result: WatchlistSearchResult) => {
-    if (isResultInLibrary(result, libraryMovies) || isResultInList(result, list)) {
+  const handleAdd = async (result: WatchlistSearchResult, listId: string) => {
+    const targetList = lists.find((current) => current.id === listId);
+    if (
+      !targetList ||
+      isResultInLibrary(result, libraryMovies) ||
+      isResultInList(result, targetList)
+    ) {
       return;
     }
 
-    setAddingId(result.id);
+    setAddingId(`${result.id}:${listId}`);
     const movie = await buildWatchlistMovie(result);
-    await onAddMovie(list.id, movie);
+    await onAddMovie(targetList.id, movie);
     setAddingId(null);
   };
 
@@ -397,7 +404,7 @@ function AddMoviesModal({
               id="add-list-movies-title"
               className="archive-anton mt-1 text-4xl uppercase leading-none text-[#e9e3d4]"
             >
-              {list.name}
+              {list?.name ?? "Choose a list after searching"}
             </h2>
           </div>
           <Button type="button" variant="ghost" size="icon" onClick={onClose}>
@@ -428,14 +435,12 @@ function AddMoviesModal({
             <div className="grid gap-3 md:grid-cols-2">
               {results.map((result) => {
                 const inLibrary = isResultInLibrary(result, libraryMovies);
-                const inList = isResultInList(result, list);
-                const isAdding = addingId === result.id;
-                const isDisabled = inLibrary || inList || isAdding;
+                const targetLists = list ? [list] : lists;
 
                 return (
                   <article
                     key={result.id}
-                    className="grid grid-cols-[58px_1fr_auto] items-center gap-4 rounded-[14px] bg-[#0b0b0b] p-3"
+                    className="grid grid-cols-[58px_1fr] items-center gap-4 rounded-[14px] bg-[#0b0b0b] p-3"
                   >
                     {result.posterUrl ? (
                       <VhsPoster
@@ -457,20 +462,40 @@ function AddMoviesModal({
                         {formatMissing(result.releaseYear)}
                       </p>
                     </div>
-                    <Button
-                      type="button"
-                      size="sm"
-                      disabled={isDisabled}
-                      onClick={() => handleAdd(result)}
-                    >
-                      {inLibrary
-                        ? "In Library"
-                        : inList
-                          ? "Added"
-                          : isAdding
-                            ? "Adding..."
-                            : "Add"}
-                    </Button>
+                    <div className="col-span-2 flex flex-wrap justify-end gap-2">
+                      {inLibrary ? (
+                        <Button type="button" size="sm" disabled>
+                          In Library
+                        </Button>
+                      ) : targetLists.length > 0 ? (
+                        targetLists.map((targetList) => {
+                          const inList = isResultInList(result, targetList);
+                          const itemAddingId = `${result.id}:${targetList.id}`;
+                          const isAdding = addingId === itemAddingId;
+                          return (
+                            <Button
+                              key={targetList.id}
+                              type="button"
+                              size="sm"
+                              disabled={inList || isAdding}
+                              onClick={() => handleAdd(result, targetList.id)}
+                            >
+                              {inList
+                                ? `In ${targetList.name}`
+                                : isAdding
+                                  ? "Adding..."
+                                  : list
+                                    ? "Add"
+                                    : `Add to ${targetList.name}`}
+                            </Button>
+                          );
+                        })
+                      ) : (
+                        <Button type="button" size="sm" disabled>
+                          Create a list first
+                        </Button>
+                      )}
+                    </div>
                   </article>
                 );
               })}
@@ -581,6 +606,7 @@ export default function WatchlistPage() {
   const [selectedListId, setSelectedListId] = useState<string | null>(null);
   const [listModal, setListModal] = useState<ListModalState>(null);
   const [isAddMoviesOpen, setIsAddMoviesOpen] = useState(false);
+  const [isGlobalAddMoviesOpen, setIsGlobalAddMoviesOpen] = useState(false);
 
   const syncLists = useCallback(
     (nextLists: CustomMovieList[]) => {
@@ -735,6 +761,27 @@ export default function WatchlistPage() {
     upsertList(data.list as CustomMovieList);
   };
 
+  const handleMoveList = async (
+    listId: string,
+    direction: "up" | "down"
+  ) => {
+    const response = await fetch("/api/watchlists/reorder", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ listId, direction }),
+    });
+    const data = (await response.json()) as
+      | { ok: true; lists: PersistedWatchlist[] }
+      | { ok: false; error: string };
+
+    if (!response.ok || !data.ok) {
+      setListError("Unable to reorder watchlists.");
+      return;
+    }
+
+    syncLists(toCustomLists(data.lists));
+  };
+
   return (
     <div className="flex w-full flex-col gap-8 pb-12 text-[#e9e3d4]">
       {!selectedList ? (
@@ -749,6 +796,15 @@ export default function WatchlistPage() {
                 My Lists
               </h1>
               <div className="absolute bottom-9 right-9 z-10 flex items-center gap-2 rounded-full bg-black/20 p-2 backdrop-blur-md">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="rounded-full"
+                  onClick={() => setIsGlobalAddMoviesOpen(true)}
+                >
+                  <Search className="h-4 w-4" aria-hidden />
+                  Search Movie
+                </Button>
                 <Button
                   type="button"
                   className="rounded-full"
@@ -775,24 +831,50 @@ export default function WatchlistPage() {
             </section>
           ) : lists.length > 0 ? (
             <section className="mx-auto grid w-full max-w-[1440px] gap-6 px-4 md:px-8 lg:grid-cols-2">
-              {lists.map((list) => (
-                <button
+              {lists.map((list, index) => (
+                <article
                   key={list.id}
-                  type="button"
-                  onClick={() => setSelectedListId(list.id)}
-                  className="group rounded-[24px] bg-black p-6 text-left transition-transform duration-200 hover:scale-[1.015] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E0B63E]"
+                  className="group relative rounded-[24px] bg-black p-6"
                 >
-                  <h2 className="archive-anton text-5xl uppercase leading-none text-[#e9e3d4]">
-                    {list.name}
-                  </h2>
-                  <p className="mt-3 font-sans text-sm font-bold text-[#6f6c7a]">
-                    {list.movies.length}{" "}
-                    {list.movies.length === 1 ? "movie" : "movies"}
-                  </p>
-                  <div className="mt-7">
-                    <ListPosterPreview movies={list.movies} />
+                  <button
+                    type="button"
+                    onClick={() => setSelectedListId(list.id)}
+                    className="block w-full text-left transition-transform duration-200 hover:scale-[1.015] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E0B63E]"
+                  >
+                    <h2 className="archive-anton text-5xl uppercase leading-none text-[#e9e3d4]">
+                      {list.name}
+                    </h2>
+                    <p className="mt-3 font-sans text-sm font-bold text-[#6f6c7a]">
+                      {list.movies.length}{" "}
+                      {list.movies.length === 1 ? "movie" : "movies"}
+                    </p>
+                    <div className="mt-7">
+                      <ListPosterPreview movies={list.movies} />
+                    </div>
+                  </button>
+                  <div className="absolute right-5 top-5 flex gap-2 opacity-100 md:opacity-0 md:transition-opacity md:group-hover:opacity-100">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      disabled={index === 0}
+                      onClick={() => handleMoveList(list.id, "up")}
+                      aria-label={`Move ${list.name} up`}
+                    >
+                      <ChevronUp className="h-4 w-4" aria-hidden />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      disabled={index === lists.length - 1}
+                      onClick={() => handleMoveList(list.id, "down")}
+                      aria-label={`Move ${list.name} down`}
+                    >
+                      <ChevronDown className="h-4 w-4" aria-hidden />
+                    </Button>
                   </div>
-                </button>
+                </article>
               ))}
             </section>
           ) : (
@@ -900,8 +982,19 @@ export default function WatchlistPage() {
       {selectedList && isAddMoviesOpen && (
         <AddMoviesModal
           list={selectedList}
+          lists={lists}
           libraryMovies={libraryMovies}
           onClose={() => setIsAddMoviesOpen(false)}
+          onAddMovie={handleAddMovieToList}
+        />
+      )}
+
+      {isGlobalAddMoviesOpen && (
+        <AddMoviesModal
+          list={null}
+          lists={lists}
+          libraryMovies={libraryMovies}
+          onClose={() => setIsGlobalAddMoviesOpen(false)}
           onAddMovie={handleAddMovieToList}
         />
       )}

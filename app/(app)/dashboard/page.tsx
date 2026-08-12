@@ -950,6 +950,11 @@ export default function DashboardPage() {
  [movies]
  );
 
+ const annualWinnerPreviewMovies = useMemo(
+ () => annualWinnerMovies.slice(0, 16),
+ [annualWinnerMovies]
+ );
+
  const nastyMovies = useMemo(
  () =>
  sortMoviesByScore(
@@ -1710,7 +1715,7 @@ export default function DashboardPage() {
  </h2>
 
  <div className="mt-12 grid grid-cols-2 gap-x-8 gap-y-12 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
- {annualWinnerMovies.map((movie) => (
+ {annualWinnerPreviewMovies.map((movie) => (
  <AnnualWinnerMovieCard key={movie.id} movie={movie} />
  ))}
  </div>

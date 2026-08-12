@@ -53,9 +53,12 @@ model Movie {
 model Watchlist {
   id        String          @id @default(cuid())
   name      String
+  position  Int             @default(0)
   items     WatchlistItem[]
   createdAt DateTime        @default(now())
   updatedAt DateTime        @updatedAt
+
+  @@index([position])
 }
 
 model WatchlistItem {

@@ -115,6 +115,12 @@ function formatHours(minutes: number) {
  return Number.isInteger(hours) ? String(hours) : hours.toFixed(1);
 }
 
+function formatDaysFromMinutes(minutes: number) {
+ if (minutes <= 0) return "0 days";
+ const days = Math.max(1, Math.round(minutes / (60 * 24)));
+ return pluralize(days, "day");
+}
+
 function pluralize(count: number, singular: string, plural = `${singular}s`) {
  return `${count} ${count === 1 ? singular : plural}`;
 }
@@ -785,7 +791,7 @@ export default function YearInReviewPage() {
  {
  label: "Hours watched",
  value: formatHours(totalRuntime),
- detail: pluralize(watchedDays, "day"),
+ detail: formatDaysFromMinutes(totalRuntime),
  },
  {
  label: "Days watching horror",
