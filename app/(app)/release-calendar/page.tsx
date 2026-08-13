@@ -22,15 +22,13 @@ const MONTHS = [
   "December",
 ] as const;
 
-type ReleaseType = "Theatrical" | "Streaming" | "Digital / VOD";
-
 type ReleaseEntry = {
   id: string;
   movie: WatchlistMovie;
   date: Date | null;
   month: number | "tba";
   releaseDate: string;
-  releaseType: ReleaseType;
+  releaseType: string;
   isPast: boolean;
 };
 
@@ -187,6 +185,7 @@ export default function ReleaseCalendarPage() {
   const lists = useMovieStore((store) => store.lists);
   const listsHydrated = useMovieStore((store) => store.listsHydrated);
   const currentYear = new Date().getFullYear();
+  const nextYear = currentYear + 1;
   const today = new Date();
   const todayStartTime = new Date(
     today.getFullYear(),
@@ -264,14 +263,19 @@ export default function ReleaseCalendarPage() {
 
     return Array.from(moviesByKey.values())
       .flatMap((movie): ReleaseEntry[] => {
-        if (releaseYear(movie) !== currentYear) {
-          return [];
-        }
+        const movieYear = releaseYear(movie);
 
         const exactReleases: ReleaseEntry[] = releaseTypeDates(movie)
           .map(({ type, date }): ReleaseEntry | null => {
             const parsedDate = parseReleaseDate(date);
             if (!parsedDate || parsedDate.getFullYear() !== currentYear) {
+              return null;
+            }
+
+            if (
+              type !== "Theatrical" &&
+              (movieYear === null || movieYear < currentYear - 1)
+            ) {
               return null;
             }
 
@@ -289,6 +293,10 @@ export default function ReleaseCalendarPage() {
 
         if (exactReleases.length > 0) return exactReleases;
 
+        if (movieYear !== currentYear) {
+          return [];
+        }
+
         return [
           {
             id: `${watchlistMovieKey(movie)}-tba`,
@@ -296,7 +304,7 @@ export default function ReleaseCalendarPage() {
             date: null,
             month: "tba" as const,
             releaseDate: "TBA",
-            releaseType: "Theatrical" as const,
+            releaseType: "Theatrical",
             isPast: false,
           },
         ];
@@ -329,6 +337,28 @@ export default function ReleaseCalendarPage() {
   );
 
   const tbaReleases = releases.filter((release) => release.month === "tba");
+
+  const nextYearReleases = useMemo<ReleaseEntry[]>(() => {
+    const moviesByKey = new Map<string, WatchlistMovie>();
+
+    calendarMovies.forEach((movie) => {
+      if (releaseYear(movie) === nextYear) {
+        moviesByKey.set(watchlistMovieKey(movie), movie);
+      }
+    });
+
+    return Array.from(moviesByKey.values())
+      .sort((a, b) => a.displayTitle.localeCompare(b.displayTitle))
+      .map((movie) => ({
+        id: `${watchlistMovieKey(movie)}-${nextYear}-tba`,
+        movie,
+        date: null,
+        month: "tba" as const,
+        releaseDate: "TBA",
+        releaseType: String(nextYear),
+        isPast: false,
+      }));
+  }, [calendarMovies, nextYear]);
 
   return (
     <div className="flex w-full flex-col gap-12 pb-12 text-[#e9e3d4]">
@@ -389,6 +419,27 @@ export default function ReleaseCalendarPage() {
             <p className="mt-3 font-sans text-xs font-bold uppercase text-[#6f6c7a]">
               {tbaReleases.length}{" "}
               {tbaReleases.length === 1 ? "release" : "releases"}
+            </p>
+          </button>
+
+          <button
+            type="button"
+            onClick={() =>
+              setSelectedMonth({
+                title: `TBA ${nextYear}`,
+                count: nextYearReleases.length,
+                releases: nextYearReleases,
+              })
+            }
+            className="flex min-h-[300px] flex-col items-center justify-end rounded-[20px] bg-black px-7 pb-7 pt-8 text-center transition-transform duration-200 hover:scale-[1.025] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#610C33]"
+            aria-label={`Open ${nextYear} TBA releases`}
+          >
+            <MonthlyPosterStrip releases={nextYearReleases} />
+            <h2 className="archive-anton text-5xl leading-none text-[#e9e3d4]">
+              TBA
+            </h2>
+            <p className="mt-3 font-sans text-xs font-bold uppercase text-[#6f6c7a]">
+              {nextYear}
             </p>
           </button>
         </div>
