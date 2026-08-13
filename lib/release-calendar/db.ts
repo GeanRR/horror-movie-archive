@@ -2,7 +2,29 @@ import "server-only";
 
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
+import { TMDB_API_BASE } from "@/lib/tmdb/config";
+import { getTmdbApiKey } from "@/lib/tmdb/server-env";
 import type { WatchlistMovie } from "@/store/movie-store";
+
+type ReleaseDateMap = {
+  theatrical?: string;
+  streaming?: string;
+  digital?: string;
+};
+
+type TmdbReleaseDate = {
+  release_date?: string;
+  type?: number;
+};
+
+type TmdbReleaseCountry = {
+  iso_3166_1?: string;
+  release_dates?: TmdbReleaseDate[];
+};
+
+type TmdbReleaseDatesResponse = {
+  results?: TmdbReleaseCountry[];
+};
 
 function stringArray(value: Prisma.JsonValue): string[] {
   return Array.isArray(value)
@@ -10,7 +32,11 @@ function stringArray(value: Prisma.JsonValue): string[] {
     : [];
 }
 
-function releaseDates(value: Prisma.JsonValue) {
+function normalizeTmdbDate(value: string | undefined) {
+  return typeof value === "string" ? value.slice(0, 10) : "";
+}
+
+function releaseDates(value: Prisma.JsonValue): ReleaseDateMap | undefined {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return undefined;
   }
@@ -20,6 +46,108 @@ function releaseDates(value: Prisma.JsonValue) {
     theatrical: typeof record.theatrical === "string" ? record.theatrical : "",
     streaming: typeof record.streaming === "string" ? record.streaming : "",
     digital: typeof record.digital === "string" ? record.digital : "",
+  };
+}
+
+function findReleaseDate(
+  countries: TmdbReleaseCountry[],
+  releaseTypes: number[]
+) {
+  const orderedCountries = [
+    ...countries.filter((country) => country.iso_3166_1 === "US"),
+    ...countries.filter((country) => country.iso_3166_1 !== "US"),
+  ];
+
+  for (const country of orderedCountries) {
+    const matches = (country.release_dates ?? [])
+      .filter((date) => releaseTypes.includes(date.type ?? 0))
+      .map((date) => normalizeTmdbDate(date.release_date))
+      .filter(Boolean)
+      .sort();
+
+    if (matches[0]) return matches[0];
+  }
+
+  return "";
+}
+
+function getMovieReleaseDates(
+  payload: TmdbReleaseDatesResponse,
+  fallbackTheatrical: string
+): ReleaseDateMap {
+  const countries = Array.isArray(payload.results) ? payload.results : [];
+
+  return {
+    theatrical:
+      findReleaseDate(countries, [3, 2]) || normalizeTmdbDate(fallbackTheatrical),
+    streaming: findReleaseDate(countries, [6]),
+    digital: findReleaseDate(countries, [4]),
+  };
+}
+
+function hasReleaseInfo(movie: WatchlistMovie) {
+  return Boolean(
+    movie.releaseDate?.trim() ||
+      movie.releaseDates?.theatrical?.trim() ||
+      movie.releaseDates?.streaming?.trim() ||
+      movie.releaseDates?.digital?.trim()
+  );
+}
+
+function movieKey(movie: {
+  tmdbId: number | null;
+  imdbId?: string | null;
+  displayTitle: string;
+  year: string;
+}) {
+  if (movie.tmdbId !== null && Number.isFinite(movie.tmdbId)) {
+    return `tmdb:${movie.tmdbId}`;
+  }
+
+  if (movie.imdbId?.trim()) {
+    return `imdb:${movie.imdbId.trim()}`;
+  }
+
+  return `title:${movie.displayTitle.trim().toLowerCase()}|${movie.year.trim()}`;
+}
+
+async function fetchTmdbReleaseInfo(tmdbId: number) {
+  const apiKey = getTmdbApiKey();
+  if (!apiKey) return null;
+
+  const [detailsResponse, releaseDatesResponse] = await Promise.all([
+    fetch(`${TMDB_API_BASE}/movie/${tmdbId}?api_key=${apiKey}&language=en-US`, {
+      cache: "no-store",
+    }),
+    fetch(`${TMDB_API_BASE}/movie/${tmdbId}/release_dates?api_key=${apiKey}`, {
+      cache: "no-store",
+    }),
+  ]);
+
+  if (!detailsResponse.ok) return null;
+
+  const details = (await detailsResponse.json()) as { release_date?: string };
+  const releaseDatesPayload = releaseDatesResponse.ok
+    ? ((await releaseDatesResponse.json()) as TmdbReleaseDatesResponse)
+    : { results: [] };
+  const releaseDate = normalizeTmdbDate(details.release_date);
+
+  return {
+    releaseDate,
+    releaseDates: getMovieReleaseDates(releaseDatesPayload, releaseDate),
+  };
+}
+
+async function withReleaseInfo(movie: WatchlistMovie): Promise<WatchlistMovie> {
+  if (hasReleaseInfo(movie) || movie.tmdbId === null) return movie;
+
+  const releaseInfo = await fetchTmdbReleaseInfo(movie.tmdbId).catch(() => null);
+  if (!releaseInfo) return movie;
+
+  return {
+    ...movie,
+    releaseDate: releaseInfo.releaseDate,
+    releaseDates: releaseInfo.releaseDates,
   };
 }
 
@@ -57,7 +185,24 @@ function serialize(
   };
 }
 
-function data(movie: WatchlistMovie) {
+function data(
+  movie: WatchlistMovie,
+  existing?: Awaited<ReturnType<typeof prisma.releaseCalendarItem.findFirst>>
+) {
+  const existingReleaseDates = existing ? releaseDates(existing.releaseDates) : undefined;
+  const nextReleaseDates = {
+    theatrical:
+      movie.releaseDates?.theatrical ||
+      movie.releaseDate ||
+      existingReleaseDates?.theatrical ||
+      existing?.releaseDate ||
+      "",
+    streaming:
+      movie.releaseDates?.streaming || existingReleaseDates?.streaming || "",
+    digital:
+      movie.releaseDates?.digital || existingReleaseDates?.digital || "",
+  };
+
   return {
     tmdbId: movie.tmdbId,
     imdbId: movie.imdbId ?? null,
@@ -70,7 +215,7 @@ function data(movie: WatchlistMovie) {
     country: movie.country,
     distributor: movie.distributor,
     runtime: movie.runtime,
-    releaseDate: movie.releaseDate,
+    releaseDate: movie.releaseDate || nextReleaseDates.theatrical,
     synopsis: movie.synopsis,
     cast: movie.cast as Prisma.InputJsonValue,
     crew: movie.crew as Prisma.InputJsonValue,
@@ -78,7 +223,7 @@ function data(movie: WatchlistMovie) {
     subgenres: movie.subgenres as Prisma.InputJsonValue,
     imdbScore: movie.imdbScore,
     rottenTomatoesScore: movie.rottenTomatoesScore,
-    releaseDates: (movie.releaseDates ?? {}) as Prisma.InputJsonValue,
+    releaseDates: nextReleaseDates as Prisma.InputJsonValue,
     metadataSourceSnapshot: movie.metadataSourceSnapshot,
     metadataLastRefreshedAt: movie.metadataLastRefreshedAt,
   };
@@ -93,15 +238,55 @@ export async function getReleaseCalendarMovies() {
 }
 
 export async function addReleaseCalendarMovies(movies: WatchlistMovie[]) {
+  const libraryMovies = await prisma.movie.findMany({
+    select: {
+      tmdbId: true,
+      imdbId: true,
+      displayTitle: true,
+      year: true,
+    },
+  });
+  const allowedKeys = new Set<string>([
+    ...movies.map(movieKey),
+    ...libraryMovies.map(movieKey),
+  ]);
+
+  const currentItems = await prisma.releaseCalendarItem.findMany({
+    select: {
+      id: true,
+      tmdbId: true,
+      imdbId: true,
+      displayTitle: true,
+      year: true,
+    },
+  });
+  const obsoleteItemIds = currentItems
+    .filter((item) => !allowedKeys.has(movieKey(item)))
+    .map((item) => item.id);
+
+  if (obsoleteItemIds.length > 0) {
+    await prisma.releaseCalendarItem.deleteMany({
+      where: { id: { in: obsoleteItemIds } },
+    });
+  }
+
   for (const movie of movies) {
-    const itemData = data(movie);
+    const movieWithReleaseInfo = await withReleaseInfo(movie);
     if (movie.tmdbId !== null) {
+      const existing = await prisma.releaseCalendarItem.findUnique({
+        where: { tmdbId: movie.tmdbId },
+      });
+      const itemData = data(movieWithReleaseInfo, existing);
       await prisma.releaseCalendarItem.upsert({
         where: { tmdbId: movie.tmdbId },
         create: itemData,
         update: itemData,
       });
     } else if (movie.imdbId) {
+      const existing = await prisma.releaseCalendarItem.findUnique({
+        where: { imdbId: movie.imdbId },
+      });
+      const itemData = data(movieWithReleaseInfo, existing);
       await prisma.releaseCalendarItem.upsert({
         where: { imdbId: movie.imdbId },
         create: itemData,

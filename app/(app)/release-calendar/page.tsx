@@ -209,7 +209,22 @@ export default function ReleaseCalendarPage() {
 
   useEffect(() => {
     const incomingMovies = lists.flatMap((list) => list.movies);
-    if (incomingMovies.length === 0) return;
+
+    if (incomingMovies.length === 0) {
+      fetch("/api/release-calendar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ movies: [] }),
+      })
+        .then((response) => response.json())
+        .then((data: { ok?: boolean; movies?: WatchlistMovie[] }) => {
+          if (data.ok && Array.isArray(data.movies)) {
+            setCalendarMovies(data.movies);
+          }
+        })
+        .catch(() => {});
+      return;
+    }
 
     setCalendarMovies((current) => {
       const moviesByKey = new Map<string, WatchlistMovie>();
