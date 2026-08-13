@@ -293,7 +293,7 @@ export default function ReleaseCalendarPage() {
 
         if (exactReleases.length > 0) return exactReleases;
 
-        if (movieYear !== currentYear) {
+        if (movieYear !== currentYear && movieYear !== null) {
           return [];
         }
 
@@ -426,7 +426,7 @@ export default function ReleaseCalendarPage() {
             type="button"
             onClick={() =>
               setSelectedMonth({
-                title: `TBA ${nextYear}`,
+                title: String(nextYear),
                 count: nextYearReleases.length,
                 releases: nextYearReleases,
               })
@@ -436,10 +436,11 @@ export default function ReleaseCalendarPage() {
           >
             <MonthlyPosterStrip releases={nextYearReleases} />
             <h2 className="archive-anton text-5xl leading-none text-[#e9e3d4]">
-              TBA
+              {nextYear}
             </h2>
             <p className="mt-3 font-sans text-xs font-bold uppercase text-[#6f6c7a]">
-              {nextYear}
+              {nextYearReleases.length}{" "}
+              {nextYearReleases.length === 1 ? "film" : "films"}
             </p>
           </button>
         </div>
