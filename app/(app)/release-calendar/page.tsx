@@ -264,6 +264,10 @@ export default function ReleaseCalendarPage() {
 
     return Array.from(moviesByKey.values())
       .flatMap((movie): ReleaseEntry[] => {
+        if (releaseYear(movie) !== currentYear) {
+          return [];
+        }
+
         const exactReleases: ReleaseEntry[] = releaseTypeDates(movie)
           .map(({ type, date }): ReleaseEntry | null => {
             const parsedDate = parseReleaseDate(date);
@@ -285,21 +289,17 @@ export default function ReleaseCalendarPage() {
 
         if (exactReleases.length > 0) return exactReleases;
 
-        if (releaseYear(movie) === currentYear) {
-          return [
-            {
-              id: `${watchlistMovieKey(movie)}-tba`,
-              movie,
-              date: null,
-              month: "tba" as const,
-              releaseDate: "TBA",
-              releaseType: "Theatrical" as const,
-              isPast: false,
-            },
-          ];
-        }
-
-        return [];
+        return [
+          {
+            id: `${watchlistMovieKey(movie)}-tba`,
+            movie,
+            date: null,
+            month: "tba" as const,
+            releaseDate: "TBA",
+            releaseType: "Theatrical" as const,
+            isPast: false,
+          },
+        ];
       })
       .sort((a, b) => {
         if (!a.date && !b.date) {
