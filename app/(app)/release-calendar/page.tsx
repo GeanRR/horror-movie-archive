@@ -185,6 +185,7 @@ function ReleaseMovieCard({
 
 export default function ReleaseCalendarPage() {
   const lists = useMovieStore((store) => store.lists);
+  const listsHydrated = useMovieStore((store) => store.listsHydrated);
   const currentYear = new Date().getFullYear();
   const today = new Date();
   const todayStartTime = new Date(
@@ -208,6 +209,8 @@ export default function ReleaseCalendarPage() {
   }, []);
 
   useEffect(() => {
+    if (!listsHydrated) return;
+
     const incomingMovies = lists.flatMap((list) => list.movies);
 
     if (incomingMovies.length === 0) {
@@ -250,7 +253,7 @@ export default function ReleaseCalendarPage() {
         .catch(() => {});
       return nextMovies;
     });
-  }, [lists]);
+  }, [lists, listsHydrated]);
 
   const releases = useMemo<ReleaseEntry[]>(() => {
     const moviesByKey = new Map<string, WatchlistMovie>();

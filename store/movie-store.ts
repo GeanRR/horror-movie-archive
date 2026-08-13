@@ -466,6 +466,7 @@ export function normalizeCustomMovieLists(
 type MovieState = {
   movies: LibraryMovie[];
   lists: CustomMovieList[];
+  listsHydrated: boolean;
 
   loadMovies: () => Promise<void>;
 
@@ -521,6 +522,7 @@ export const useMovieStore = create<MovieState>()(
     (set) => ({
       movies: [],
       lists: [],
+      listsHydrated: false,
 
       loadMovies: async () => {
         const response = await fetch("/api/movies", { cache: "no-store" });
@@ -727,6 +729,7 @@ export const useMovieStore = create<MovieState>()(
 
       replaceLists: (lists) =>
         set(() => ({
+          listsHydrated: true,
           lists: lists.map((list) => ({
             ...list,
             movies: list.movies
