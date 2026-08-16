@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
   ChevronDown,
@@ -9,6 +9,7 @@ import {
   Film,
   Plus,
   Search,
+  Shuffle,
   Trash2,
   X,
 } from "lucide-react";
@@ -37,6 +38,54 @@ type ListModalState =
 
 function formatMissing(value: string | null | undefined) {
   return value && value.trim() ? value : "—";
+}
+
+function formatOptionalNumber(value: number | null | undefined) {
+  return typeof value === "number" && Number.isFinite(value)
+    ? value.toString()
+    : "";
+}
+
+function getWatchlistMovieKey(movie: WatchlistMovie) {
+  if (movie.imdbId?.trim()) {
+    return `imdb:${movie.imdbId.trim().toLowerCase()}`;
+  }
+
+  if (movie.tmdbId !== null) {
+    return `tmdb:${movie.tmdbId}`;
+  }
+
+  return `title:${movie.displayTitle.trim().toLowerCase()}:${movie.year}`;
+}
+
+function getUniqueWatchlistMovies(lists: CustomMovieList[]) {
+  const moviesByKey = new Map<string, WatchlistMovie>();
+
+  for (const list of lists) {
+    for (const movie of list.movies) {
+      const key = getWatchlistMovieKey(movie);
+      if (!moviesByKey.has(key)) {
+        moviesByKey.set(key, movie);
+      }
+    }
+  }
+
+  return Array.from(moviesByKey.values());
+}
+
+function pickRandomWatchlistMovie(
+  movies: WatchlistMovie[],
+  previousMovie: WatchlistMovie | null
+) {
+  if (movies.length === 0) return null;
+
+  const previousKey = previousMovie ? getWatchlistMovieKey(previousMovie) : "";
+  const pool =
+    movies.length > 1 && previousKey
+      ? movies.filter((movie) => getWatchlistMovieKey(movie) !== previousKey)
+      : movies;
+
+  return pool[Math.floor(Math.random() * pool.length)] ?? null;
 }
 
 function createWatchlistMovieId(result: WatchlistSearchResult) {
@@ -195,6 +244,140 @@ function ListPosterPreview({ movies }: { movies: WatchlistMovie[] }) {
           />
         </span>
       ))}
+    </div>
+  );
+}
+
+function PickForMeModal({
+  movie,
+  hasMovies,
+  onClose,
+  onReroll,
+}: {
+  movie: WatchlistMovie | null;
+  hasMovies: boolean;
+  onClose: () => void;
+  onReroll: () => void;
+}) {
+  const subgenre = movie?.subgenres.find((value) => value.trim());
+  const imdbScore = formatOptionalNumber(movie?.imdbScore);
+
+  return (
+    <div
+      className="motion-modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-6 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="pick-for-me-title"
+    >
+      <button
+        type="button"
+        className="absolute inset-0"
+        aria-label="Close pick for me"
+        onClick={onClose}
+      />
+      <section className="motion-modal-card relative w-full max-w-3xl overflow-hidden rounded-[24px] bg-black shadow-2xl">
+        <header className="flex items-center justify-between border-b border-[#e9e3d4]/10 px-6 py-5">
+          <div>
+            <p className="font-sans text-sm font-medium text-[#E0B63E]">
+              Pick for me
+            </p>
+            <h2
+              id="pick-for-me-title"
+              className="archive-anton mt-1 text-4xl uppercase leading-none text-[#e9e3d4]"
+            >
+              Tonight pick
+            </h2>
+          </div>
+          <Button type="button" variant="ghost" size="icon" onClick={onClose}>
+            <X className="h-4 w-4" aria-hidden />
+          </Button>
+        </header>
+
+        {movie ? (
+          <div className="grid gap-7 p-6 md:grid-cols-[180px_1fr] md:items-center">
+            {movie.posterUrl ? (
+              <VhsPoster
+                src={movie.posterUrl}
+                alt={movie.displayTitle}
+                className="mx-auto aspect-[2/3] w-[180px] rounded-[10px] md:mx-0"
+                imageClassName="object-cover"
+              />
+            ) : (
+              <div className="mx-auto grid aspect-[2/3] w-[180px] place-items-center rounded-[10px] bg-[#111] text-[#6f6c7a] md:mx-0">
+                <Film className="h-8 w-8" aria-hidden />
+              </div>
+            )}
+
+            <div className="min-w-0">
+              <h3 className="archive-anton text-5xl uppercase leading-none text-[#e9e3d4]">
+                {movie.displayTitle}
+              </h3>
+              {movie.titlePt && movie.titlePt !== movie.displayTitle && (
+                <p className="mt-2 font-sans text-base text-[#e9e3d4]/75">
+                  {movie.titlePt}
+                </p>
+              )}
+
+              <dl className="mt-6 grid gap-4 font-sans text-sm sm:grid-cols-2">
+                <div>
+                  <dt className="text-[#6f6c7a]">Year</dt>
+                  <dd className="mt-1 text-[#e9e3d4]">
+                    {formatMissing(movie.year)}
+                  </dd>
+                </div>
+                {movie.runtime !== null && (
+                  <div>
+                    <dt className="text-[#6f6c7a]">Runtime</dt>
+                    <dd className="mt-1 text-[#e9e3d4]">
+                      {movie.runtime} min
+                    </dd>
+                  </div>
+                )}
+                {movie.country && (
+                  <div>
+                    <dt className="text-[#6f6c7a]">Country</dt>
+                    <dd className="mt-1 text-[#e9e3d4]">{movie.country}</dd>
+                  </div>
+                )}
+                {subgenre && (
+                  <div>
+                    <dt className="text-[#6f6c7a]">Subgenre</dt>
+                    <dd className="mt-1 text-[#e9e3d4]">{subgenre}</dd>
+                  </div>
+                )}
+                {imdbScore && (
+                  <div>
+                    <dt className="text-[#6f6c7a]">IMDb</dt>
+                    <dd className="mt-1 text-[#e9e3d4]">{imdbScore}</dd>
+                  </div>
+                )}
+              </dl>
+            </div>
+          </div>
+        ) : (
+          <div className="grid min-h-[320px] place-items-center p-6 text-center">
+            <div>
+              <Film className="mx-auto h-10 w-10 text-[#6f6c7a]" aria-hidden />
+              <h3 className="archive-anton mt-5 text-4xl uppercase leading-none text-[#e9e3d4]">
+                No movies to pick
+              </h3>
+              <p className="mt-3 font-sans text-sm text-[#6f6c7a]">
+                Add movies to your Watchlists before asking for a random pick.
+              </p>
+            </div>
+          </div>
+        )}
+
+        <footer className="flex justify-end gap-3 border-t border-[#e9e3d4]/10 px-6 py-5">
+          <Button type="button" variant="outline" onClick={onClose}>
+            Close
+          </Button>
+          <Button type="button" onClick={onReroll} disabled={!hasMovies}>
+            <Shuffle className="h-4 w-4" aria-hidden />
+            Reroll
+          </Button>
+        </footer>
+      </section>
     </div>
   );
 }
@@ -607,6 +790,10 @@ export default function WatchlistPage() {
   const [listModal, setListModal] = useState<ListModalState>(null);
   const [isAddMoviesOpen, setIsAddMoviesOpen] = useState(false);
   const [isGlobalAddMoviesOpen, setIsGlobalAddMoviesOpen] = useState(false);
+  const [isPickForMeOpen, setIsPickForMeOpen] = useState(false);
+  const [pickedMovie, setPickedMovie] = useState<WatchlistMovie | null>(null);
+
+  const pickableMovies = useMemo(() => getUniqueWatchlistMovies(lists), [lists]);
 
   const syncLists = useCallback(
     (nextLists: CustomMovieList[]) => {
@@ -782,6 +969,17 @@ export default function WatchlistPage() {
     syncLists(toCustomLists(data.lists));
   };
 
+  const handlePickForMe = () => {
+    setPickedMovie(pickRandomWatchlistMovie(pickableMovies, null));
+    setIsPickForMeOpen(true);
+  };
+
+  const handleRerollPick = () => {
+    setPickedMovie((currentMovie) =>
+      pickRandomWatchlistMovie(pickableMovies, currentMovie)
+    );
+  };
+
   return (
     <div className="flex w-full flex-col gap-8 pb-12 text-[#e9e3d4]">
       {!selectedList ? (
@@ -796,6 +994,15 @@ export default function WatchlistPage() {
                 My Lists
               </h1>
               <div className="absolute bottom-9 right-9 z-10 flex items-center gap-2 rounded-full bg-black/20 p-2 backdrop-blur-md">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="rounded-full"
+                  onClick={handlePickForMe}
+                >
+                  <Shuffle className="h-4 w-4" aria-hidden />
+                  Pick for me
+                </Button>
                 <Button
                   type="button"
                   variant="outline"
@@ -996,6 +1203,15 @@ export default function WatchlistPage() {
           libraryMovies={libraryMovies}
           onClose={() => setIsGlobalAddMoviesOpen(false)}
           onAddMovie={handleAddMovieToList}
+        />
+      )}
+
+      {isPickForMeOpen && (
+        <PickForMeModal
+          movie={pickedMovie}
+          hasMovies={pickableMovies.length > 0}
+          onClose={() => setIsPickForMeOpen(false)}
+          onReroll={handleRerollPick}
         />
       )}
     </div>
