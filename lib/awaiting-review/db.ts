@@ -61,6 +61,16 @@ export async function enqueueWatchedMovieForReview(
   });
 
   if (existing) {
+    if (existing.status === "PENDING" && !existing.watchedAt && movie.watchedAt) {
+      await prisma.awaitingReviewItem.update({
+        where: { id: existing.id },
+        data: {
+          watchedAt: movie.watchedAt,
+          source: movie.source,
+        },
+      });
+    }
+
     if (existing.status !== "PENDING") {
       await prisma.awaitingReviewItem.update({
         where: { id: existing.id },

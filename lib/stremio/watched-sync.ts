@@ -78,7 +78,18 @@ function asBoolean(value: unknown) {
 
 function asDate(value: unknown) {
   if (typeof value !== "string" && typeof value !== "number") return null;
-  const date = new Date(value);
+
+  const normalizedValue =
+    typeof value === "number"
+      ? value < 1_000_000_000_000
+        ? value * 1000
+        : value
+      : /^\d+$/.test(value.trim())
+        ? Number(value.trim()) < 1_000_000_000_000
+          ? Number(value.trim()) * 1000
+          : Number(value.trim())
+        : value;
+  const date = new Date(normalizedValue);
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
@@ -576,7 +587,7 @@ export async function runStremioWatchedSync(
           displayTitle: watchlistMovie.displayTitle || movie.name || movie.imdbId,
           year: watchlistMovie.year,
           posterUrl: watchlistMovie.posterUrl,
-          watchedAt: movie.lastWatched ? new Date(movie.lastWatched) : new Date(),
+          watchedAt: movie.lastWatched ? new Date(movie.lastWatched) : null,
           source: "Stremio watched sync",
         },
         existingMovies
