@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isDatabaseConfigured, prisma } from "@/lib/db/prisma";
 import { TMDB_API_BASE } from "@/lib/tmdb/config";
 import { getTmdbApiKey } from "@/lib/tmdb/server-env";
 
@@ -27,6 +28,11 @@ type TmdbCrewPerson = {
  job?: string;
  department?: string;
  profile_path?: string | null;
+};
+
+type TmdbCredits = {
+ cast?: TmdbCastPerson[];
+ crew?: TmdbCrewPerson[];
 };
 
 type PersonAggregate = {
@@ -159,6 +165,62 @@ function isNonVisualLiveActionCastCredit(person: TmdbCastPerson) {
  return NON_VISUAL_LIVE_ACTION_CREDIT_PATTERNS.some((pattern) => pattern.test(character));
 }
 
+function normalizeCredits(value: unknown): TmdbCredits | null {
+ if (!value || typeof value !== "object") return null;
+
+ const credits = value as TmdbCredits;
+ return {
+ cast: Array.isArray(credits.cast) ? credits.cast : [],
+ crew: Array.isArray(credits.crew) ? credits.crew : [],
+ };
+}
+
+async function fetchCreditsFromTmdb(tmdbId: number, apiKey: string) {
+ const response = await fetch(
+ `${TMDB_API_BASE}/movie/${tmdbId}/credits?api_key=${apiKey}&language=en-US`,
+ { cache: "no-store" }
+ );
+
+ if (!response.ok) return null;
+
+ return normalizeCredits(await response.json());
+}
+
+async function loadCreditsForMovies(movies: MoviePayload[], apiKey: string) {
+ const creditsByTmdbId = new Map<number, TmdbCredits>();
+ const uniqueTmdbIds = [...new Set(movies.map((movie) => movie.tmdbId))];
+
+ if (isDatabaseConfigured()) {
+ const cachedCredits = await prisma.tmdbMovieCreditsCache.findMany({
+ where: { tmdbId: { in: uniqueTmdbIds } },
+ });
+
+ for (const cached of cachedCredits) {
+ const credits = normalizeCredits(cached.credits);
+ if (credits) creditsByTmdbId.set(cached.tmdbId, credits);
+ }
+ }
+
+ const missingTmdbIds = uniqueTmdbIds.filter((tmdbId) => !creditsByTmdbId.has(tmdbId));
+
+ for (const tmdbId of missingTmdbIds) {
+ const credits = await fetchCreditsFromTmdb(tmdbId, apiKey);
+ if (!credits) continue;
+
+ creditsByTmdbId.set(tmdbId, credits);
+
+ if (isDatabaseConfigured()) {
+ await prisma.tmdbMovieCreditsCache.upsert({
+ where: { tmdbId },
+ create: { tmdbId, credits },
+ update: { credits, fetchedAt: new Date() },
+ });
+ }
+ }
+
+ return creditsByTmdbId;
+}
+
 export async function POST(request: NextRequest) {
  const apiKey = getTmdbApiKey();
  if (!apiKey) {
@@ -182,18 +244,11 @@ export async function POST(request: NextRequest) {
  const writerMap = new Map<number, PersonAggregate>();
  const cinematographerMap = new Map<number, PersonAggregate>();
 
- const creditResults = await Promise.allSettled(
- movies.map(async (movie) => {
- const response = await fetch(
- `${TMDB_API_BASE}/movie/${movie.tmdbId}/credits?api_key=${apiKey}&language=en-US`,
- { cache: "no-store" }
- );
- if (!response.ok) return;
+ const creditsByTmdbId = await loadCreditsForMovies(movies, apiKey);
 
- const credits = (await response.json()) as {
- cast?: TmdbCastPerson[];
- crew?: TmdbCrewPerson[];
- };
+ for (const movie of movies) {
+ const credits = creditsByTmdbId.get(movie.tmdbId);
+ if (!credits) continue;
 
  for (const person of credits.crew ?? []) {
  if (person.job === "Director") {
@@ -220,10 +275,9 @@ export async function POST(request: NextRequest) {
  if (person.gender === 2) aggregatePerson(actorMap, person, "Acting", movie);
  if (person.gender === 1) aggregatePerson(actressMap, person, "Acting", movie);
  }
- })
- );
+ }
 
- const totalFailures = creditResults.filter((result) => result.status === "rejected").length;
+ const totalFailures = movies.filter((movie) => !creditsByTmdbId.has(movie.tmdbId)).length;
  const totalMovies = Math.max(1, movies.length);
 
  const topActors = topPeople(actorMap, totalMovies, 10);
