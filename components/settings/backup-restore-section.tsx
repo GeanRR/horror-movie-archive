@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { LibraryTxtExportModal } from "@/components/settings/library-txt-export-modal";
 import { downloadCsv } from "@/lib/export/export-csv";
 import { downloadBackup, parseBackupFile } from "@/lib/export/export-backup";
 import { restoreBackup, replaceAllConfirmation } from "@/lib/export/import-backup";
@@ -12,6 +13,7 @@ import { Download, Upload, AlertTriangle, CheckCircle2, XCircle, Loader2 } from 
 export function BackupRestoreSection() {
  const [importState, setImportState] = useState<"idle" | "importing" | "done" | "error">("idle");
  const [importMessage, setImportMessage] = useState("");
+ const [isTxtExportOpen, setIsTxtExportOpen] = useState(false);
  const fileInputRef = useRef<HTMLInputElement>(null);
 
  const handleExportBackup = () => {
@@ -84,6 +86,19 @@ export function BackupRestoreSection() {
  <Separator className="bg-border/40" />
 
  <div className="space-y-2">
+ <Label>Export TXT</Label>
+ <p className="text-xs text-muted-foreground">
+ Export selected movie fields to a plain text file.
+ </p>
+ <Button variant="outline" size="sm" onClick={() => setIsTxtExportOpen(true)}>
+ <Download className="mr-1 h-3 w-3" />
+ Export TXT
+ </Button>
+ </div>
+
+ <Separator className="bg-border/40" />
+
+ <div className="space-y-2">
  <Label>Export Full Backup</Label>
  <p className="text-xs text-muted-foreground">
  Download a complete JSON backup of your archive.
@@ -143,6 +158,10 @@ export function BackupRestoreSection() {
  </div>
  )}
  </div>
+
+ {isTxtExportOpen && (
+ <LibraryTxtExportModal onClose={() => setIsTxtExportOpen(false)} />
+ )}
  </div>
  );
 }
