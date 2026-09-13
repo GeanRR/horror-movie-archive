@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { LibraryDirectorDisplay } from "@/components/library/library-director-display";
 import { LibraryListTable } from "@/components/library/library-list-table";
 import { MovieBadge } from "@/components/movie/movie-badge";
 import { MovieStars } from "@/components/movie/movie-stars";
@@ -120,7 +121,9 @@ export function LibraryListView({
 
  title: <span className={titleClassName}>{movie.displayTitle}</span>,
  titlePt: movie.titlePt ? <span className={titleClassName}>{movie.titlePt}</span> : missingValue,
- director: <span className={toneClassName}>{movie.director}</span>,
+ director: (
+ <LibraryDirectorDisplay value={movie.director} className={toneClassName} />
+ ),
  country: (
  <span className={toneClassName}>
  {abbreviateCountry(movie.country)}

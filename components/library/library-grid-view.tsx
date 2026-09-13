@@ -1,6 +1,7 @@
 "use client";
 
 import { Film } from "lucide-react";
+import { LibraryDirectorDisplay } from "@/components/library/library-director-display";
 import { MovieStars } from "@/components/movie/movie-stars";
 import { VhsPoster } from "@/components/movie/vhs-poster";
 import { formatMissingValue } from "@/components/ui/missing-value";
@@ -76,10 +77,17 @@ export function LibraryGridView({
  const toneClassName = getLibraryToneClass(movie);
 
  return (
- <button
+ <article
  key={movie.id}
- type="button"
+ role="button"
+ tabIndex={0}
  onClick={() => onOpenMovie(movie.id)}
+ onKeyDown={(event) => {
+ if (event.key === "Enter" || event.key === " ") {
+ event.preventDefault();
+ onOpenMovie(movie.id);
+ }
+ }}
  className="group relative grid min-h-[244px] min-w-0 grid-cols-[148px_1fr] overflow-hidden rounded-[24px] bg-black p-6 text-left transition-transform duration-200 hover:scale-[1.015] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#610C33]"
  >
  {badge && (
@@ -118,7 +126,7 @@ export function LibraryGridView({
  {movie.year} • {abbreviateCountry(movie.country)}
  </p>
  <p className={cn("mt-1 font-sans text-[14px] font-normal", toneClassName)}>
- {movie.director}
+ <LibraryDirectorDisplay value={movie.director} />
  </p>
 
  <div className="mt-5">
@@ -159,7 +167,7 @@ export function LibraryGridView({
  </span>
  </div>
  </div>
- </button>
+ </article>
  );
  })}
  </div>
