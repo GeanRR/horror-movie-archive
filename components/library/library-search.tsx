@@ -65,7 +65,12 @@ export function LibrarySearch({
  variant="ghost"
  size="icon"
  className="h-11 w-11 shrink-0 rounded-full text-[#e9e3d4] hover:bg-black/20 hover:text-[#e9e3d4]"
- onClick={() => onOpenChange(!isOpen)}
+ onClick={() => {
+ if (isOpen) {
+ onValueChange("");
+ }
+ onOpenChange(!isOpen);
+ }}
  aria-expanded={isOpen}
  aria-label={isOpen ? "Close search" : "Open search"}
  >

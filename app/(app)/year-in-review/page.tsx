@@ -183,10 +183,6 @@ function sortByWatchedDate(a: WatchedMovie, b: WatchedMovie) {
 }
 
 function compareBestMovie(a: WatchedMovie, b: WatchedMovie) {
- if (a.movie.bestOfYear !== b.movie.bestOfYear) {
- return a.movie.bestOfYear ? -1 : 1;
- }
-
  const scoreDelta = (b.movie.reviewScore ?? -1) - (a.movie.reviewScore ?? -1);
  if (scoreDelta !== 0) return scoreDelta;
 
@@ -194,6 +190,14 @@ function compareBestMovie(a: WatchedMovie, b: WatchedMovie) {
  if (starsDelta !== 0) return starsDelta;
 
  return a.movie.displayTitle.localeCompare(b.movie.displayTitle);
+}
+
+function compareBestReleaseMovie(a: WatchedMovie, b: WatchedMovie) {
+ if (a.movie.bestOfYear !== b.movie.bestOfYear) {
+ return a.movie.bestOfYear ? -1 : 1;
+ }
+
+ return compareBestMovie(a, b);
 }
 
 function compareMovieScore(a: LibraryMovie, b: LibraryMovie) {
@@ -676,6 +680,62 @@ function ScoreShowcaseBlock({
  );
 }
 
+function YearBestFeature({
+ eyebrow,
+ entry,
+}: {
+ eyebrow: string;
+ entry: WatchedMovie;
+}) {
+ return (
+ <div className="relative z-10 flex flex-col gap-8 md:flex-row md:items-center">
+ {entry.movie.posterUrl ? (
+ <VhsPoster
+ src={entry.movie.posterUrl}
+ alt={entry.movie.displayTitle}
+ className="h-[236px] w-[158px] rounded-[10px]"
+ imageClassName="object-cover"
+ />
+ ) : (
+ <div className="flex h-[236px] w-[158px] shrink-0 items-center justify-center rounded-[10px] border border-[#E0B63E]/25 bg-[#050505] font-sans text-xs font-bold uppercase text-[#e9e3d4]/55">
+ No poster
+ </div>
+ )}
+
+ <div className="max-w-xl">
+ <p className="font-sans text-sm font-bold uppercase text-[#E0B63E]">
+ {eyebrow}
+ </p>
+ <h2 className="masterpiece-text archive-anton mt-5 text-5xl uppercase leading-none md:text-6xl">
+ {entry.movie.displayTitle}
+ </h2>
+ <p className="mt-4 font-sans text-[14px] text-[#e9e3d4]">
+ <span className="font-black">{entry.movie.year}</span>
+ <span className="mx-2 font-black">•</span>
+ <span className="font-normal">
+ {displayValue(entry.movie.director) ?? "-"}
+ </span>
+ </p>
+ <div className="mt-5 flex flex-wrap items-center gap-2">
+ <span className="inline-flex items-center gap-1.5 font-sans text-sm font-black text-[#e9e3d4]">
+ <img
+ src="/images/gean.png"
+ alt=""
+ aria-hidden
+ className="h-5 w-5 rounded-full object-cover grayscale"
+ />
+ {formatReviewScore(entry.movie.reviewScore)}
+ </span>
+ <MovieStars stars={entry.movie.stars} size="sm" />
+ </div>
+ <p className="mt-6 font-sans text-sm font-black uppercase text-[#e9e3d4]">
+ Watched {formatWatchedDay(entry.date)}
+ </p>
+ </div>
+ </div>
+ );
+}
+
 export default function YearInReviewPage() {
  const movies = useMovieStore((state) => state.movies);
  const currentYear = new Date().getFullYear();
@@ -758,6 +818,14 @@ export default function YearInReviewPage() {
  const bestMovieEntry = useMemo(
  () => [...yearEntries].sort(compareBestMovie)[0] ?? null,
  [yearEntries]
+ );
+
+ const bestReleaseEntry = useMemo(
+ () =>
+ [...yearEntries]
+ .filter(({ movie }) => releaseYear(movie) === selectedYear)
+ .sort(compareBestReleaseMovie)[0] ?? null,
+ [selectedYear, yearEntries]
  );
 
  const yearStats = useMemo(() => {
@@ -1014,63 +1082,30 @@ export default function YearInReviewPage() {
  src="/images/skull.png"
  alt=""
  aria-hidden
- className="pointer-events-none absolute bottom-[-126px] right-[-8px] h-[565px] w-auto max-w-none rotate-[14deg] opacity-100"
+ className="pointer-events-none absolute right-[-20px] top-1/2 h-[565px] w-auto max-w-none -translate-y-1/2 rotate-[14deg] opacity-100"
  />
  <div className="pointer-events-none absolute inset-y-0 left-0 w-[58%] bg-[linear-gradient(90deg,#000_0%,#000_74%,rgba(0,0,0,0)_100%)]" />
 
- {bestMovieEntry ? (
- <div className="relative z-10 flex flex-col gap-8 md:flex-row md:items-center">
- {bestMovieEntry.movie.posterUrl ? (
- <VhsPoster
- src={bestMovieEntry.movie.posterUrl}
- alt={bestMovieEntry.movie.displayTitle}
- className="h-[270px] w-[182px] rounded-[10px]"
- imageClassName="object-cover"
+ {bestMovieEntry || bestReleaseEntry ? (
+ <div className="relative z-10 flex flex-col gap-10">
+ {bestMovieEntry && (
+ <YearBestFeature
+ eyebrow={`Best watched in ${selectedYear}`}
+ entry={bestMovieEntry}
  />
- ) : (
- <div className="flex h-[270px] w-[182px] shrink-0 items-center justify-center rounded-[10px] border border-[#E0B63E]/25 bg-[#050505] font-sans text-xs font-bold uppercase text-[#e9e3d4]/55">
- No poster
- </div>
  )}
-
- <div className="max-w-xl">
- <p className="font-sans text-sm font-bold uppercase text-[#E0B63E]">
- Best of {selectedYear}
- </p>
- <h2 className="masterpiece-text archive-anton mt-5 text-5xl uppercase leading-none md:text-6xl">
- {bestMovieEntry.movie.displayTitle}
- </h2>
- <p className="mt-4 font-sans text-[14px] text-[#e9e3d4]">
- <span className="font-black">
- {bestMovieEntry.movie.year}
- </span>
- <span className="mx-2 font-black">•</span>
- <span className="font-normal">
- {displayValue(bestMovieEntry.movie.director) ?? "-"}
- </span>
- </p>
- <div className="mt-5 flex flex-wrap items-center gap-2">
- <span className="inline-flex items-center gap-1.5 font-sans text-sm font-black text-[#e9e3d4]">
- <img
- src="/images/gean.png"
- alt=""
- aria-hidden
- className="h-5 w-5 rounded-full object-cover grayscale"
+ {bestReleaseEntry && (
+ <YearBestFeature
+ eyebrow={`Best ${selectedYear} release`}
+ entry={bestReleaseEntry}
  />
- {formatReviewScore(bestMovieEntry.movie.reviewScore)}
- </span>
- <MovieStars stars={bestMovieEntry.movie.stars} size="sm" />
- </div>
- <p className="mt-6 font-sans text-sm font-black uppercase text-[#e9e3d4]">
- Watched {formatWatchedDay(bestMovieEntry.date)}
- </p>
- </div>
+ )}
  </div>
  ) : (
  <div className="relative z-10 flex min-h-[270px] items-center">
  <div>
  <p className="font-sans text-sm font-bold uppercase text-[#E0B63E]">
- Best of {selectedYear}
+ Best watched in {selectedYear}
  </p>
  <h2 className="masterpiece-text archive-anton mt-5 text-5xl uppercase leading-none md:text-6xl">
  No winner yet
@@ -1101,51 +1136,6 @@ export default function YearInReviewPage() {
  ))}
  </div>
  </section>
-
- {subgenres.length > 0 && (
- <section className="overflow-hidden rounded-[24px] bg-black">
- <div className="flex min-h-[232px] flex-col justify-center bg-black px-8 py-8">
- <p className="font-sans text-sm font-bold uppercase text-[#E0B63E]">
- Horror Subgenres
- </p>
- <h2 className="archive-anton mt-7 max-w-[780px] text-5xl uppercase leading-[0.95] text-[#e9e3d4] md:text-6xl">
- The year reveals
- <br />
- identities
- </h2>
- </div>
-
- <div className="p-7 md:p-8">
- <div className="grid gap-4 lg:grid-cols-2">
- {subgenres.map((subgenre, index) => (
- <button
- key={subgenre.name}
- type="button"
- onClick={() => setSelectedSubgenre(subgenre)}
- className="group grid min-h-[114px] grid-cols-[minmax(0,1fr)_minmax(180px,270px)] items-center gap-5 rounded-[14px] bg-[#0b0b0b] px-7 py-5 text-left transition-transform duration-200 hover:scale-[1.015] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#610C33]"
- aria-label={`Open ${subgenre.name} movies`}
- >
- <div className="min-w-0">
- <h3 className="archive-anton text-3xl leading-none text-[#e9e3d4]">
- <span className="text-[#8b0f49]">
- {String(index + 1).padStart(2, "0")}.
- </span>{" "}
- {subgenre.name}
- </h3>
- <p className="mt-3 font-sans text-sm font-bold uppercase text-[#6f6c7a]">
- {subgenre.count} {subgenre.count === 1 ? "movie" : "movies"} /{" "}
- {subgenre.percentage}% •{" "}
- {formatReviewScore(subgenre.averagePersonalScore)} avg
- </p>
- </div>
-
- <CompactMovieStrip movies={subgenre.coverMovies} />
- </button>
- ))}
- </div>
- </div>
- </section>
- )}
 
  {peopleSections.length > 0 && (
  <section className="py-10">
@@ -1227,6 +1217,51 @@ export default function YearInReviewPage() {
  badgePath="/badges/badge_9.png"
  />
  </section>
+
+ {subgenres.length > 0 && (
+ <section className="overflow-hidden rounded-[24px] bg-black">
+ <div className="flex min-h-[232px] flex-col items-center justify-center bg-black px-8 py-8 text-center">
+ <p className="font-sans text-sm font-bold uppercase text-[#E0B63E]">
+ Horror Subgenres
+ </p>
+ <h2 className="archive-anton mx-auto mt-7 max-w-[780px] text-5xl uppercase leading-[0.95] text-[#e9e3d4] md:text-6xl">
+ The year reveals
+ <br />
+ identities
+ </h2>
+ </div>
+
+ <div className="p-7 md:p-8">
+ <div className="grid gap-4 lg:grid-cols-2">
+ {subgenres.map((subgenre, index) => (
+ <button
+ key={subgenre.name}
+ type="button"
+ onClick={() => setSelectedSubgenre(subgenre)}
+ className="group grid min-h-[114px] grid-cols-[minmax(0,1fr)_minmax(180px,270px)] items-center gap-5 rounded-[14px] bg-[#0b0b0b] px-7 py-5 text-left transition-transform duration-200 hover:scale-[1.015] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#610C33]"
+ aria-label={`Open ${subgenre.name} movies`}
+ >
+ <div className="min-w-0">
+ <h3 className="archive-anton text-3xl leading-none text-[#e9e3d4]">
+ <span className="text-[#8b0f49]">
+ {String(index + 1).padStart(2, "0")}.
+ </span>{" "}
+ {subgenre.name}
+ </h3>
+ <p className="mt-3 font-sans text-sm font-bold uppercase text-[#6f6c7a]">
+ {subgenre.count} {subgenre.count === 1 ? "movie" : "movies"} /{" "}
+ {subgenre.percentage}% •{" "}
+ {formatReviewScore(subgenre.averagePersonalScore)} avg
+ </p>
+ </div>
+
+ <CompactMovieStrip movies={subgenre.coverMovies} />
+ </button>
+ ))}
+ </div>
+ </div>
+ </section>
+ )}
  </main>
 
  {selectedSubgenre && (

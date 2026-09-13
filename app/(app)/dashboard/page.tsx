@@ -20,6 +20,7 @@ type DecadeGroup = {
  label: string;
  count: number;
  percentage: number;
+ averagePersonalScore: number | null;
  movies: LibraryMovie[];
  coverMovies: LibraryMovie[];
 };
@@ -191,6 +192,16 @@ function dateWeight(value: string | null | undefined) {
 
  const time = new Date(`${date.slice(0, 10)}T00:00:00`).getTime();
  return Number.isFinite(time) ? time : 0;
+}
+
+function releaseDateWeight(movie: LibraryMovie) {
+ const exactDateWeight = dateWeight(movie.releaseDate);
+ if (exactDateWeight > 0) return exactDateWeight;
+
+ const year = releaseYear(movie);
+ if (!year) return 0;
+
+ return new Date(`${year}-01-01T00:00:00`).getTime();
 }
 
 function scoreWeight(movie: LibraryMovie) {
@@ -686,7 +697,7 @@ export default function DashboardPage() {
 
  return [
  ["Total movies", String(movies.length)],
- ["Most watched year", mostWatchedYear ? String(mostWatchedYear[0]) : "—"],
+ ["Most watched release year", mostWatchedYear ? String(mostWatchedYear[0]) : "—"],
  ["Most watched decade", compactDecadeLabel(decadeCounts[0]?.name)],
  ["Most watched country", abbreviateCountry(countryCounts[0]?.name)],
  ];
@@ -740,6 +751,8 @@ export default function DashboardPage() {
  })[0] ?? null;
  const newestRelease =
  [...yearMovies].sort((a, b) => {
+ const dateDelta = releaseDateWeight(b.movie) - releaseDateWeight(a.movie);
+ if (dateDelta !== 0) return dateDelta;
  if (b.year !== a.year) return b.year - a.year;
  return a.movie.displayTitle.localeCompare(b.movie.displayTitle);
  })[0] ?? null;
@@ -826,6 +839,7 @@ export default function DashboardPage() {
  percentage: movies.length
  ? Math.round((decadeMovies.length / movies.length) * 100)
  : 0,
+ averagePersonalScore: averagePersonalScore(decadeMovies),
  movies: [...decadeMovies].sort((a, b) => {
  const yearDelta = (releaseYear(a) ?? 9999) - (releaseYear(b) ?? 9999);
  if (yearDelta !== 0) return yearDelta;
@@ -1175,7 +1189,7 @@ export default function DashboardPage() {
  </h3>
  <p className="mt-3 font-sans text-sm font-bold uppercase text-[#6f6c7a]">
  {decade.count} {decade.count === 1 ? "movie" : "movies"} /{" "}
- {decade.percentage}%
+ {decade.percentage}% • {formatScore(decade.averagePersonalScore)} avg
  </p>
  </button>
  ))}
@@ -1234,11 +1248,11 @@ export default function DashboardPage() {
  {countries.length > 0 && (
  <section className="bg-[#0b0b0b] px-8 pb-20 pt-8">
  <div className="mx-auto max-w-[1440px] overflow-hidden rounded-[24px] bg-black">
- <div className="flex min-h-[232px] flex-col justify-center bg-black px-8 py-8">
+ <div className="flex min-h-[232px] flex-col items-center justify-center bg-black px-8 py-8 text-center">
  <p className="font-sans text-sm font-bold uppercase text-[#e0b63e]">
  Around the World
  </p>
- <h2 className="archive-anton mt-7 max-w-[720px] text-5xl uppercase leading-[0.95] text-[#e9e3d4] md:text-6xl">
+ <h2 className="archive-anton mx-auto mt-7 max-w-[720px] text-5xl uppercase leading-[0.95] text-[#e9e3d4] md:text-6xl">
  {countries[0].name} leaves
  <br />
  the deepest mark
@@ -1324,52 +1338,6 @@ export default function DashboardPage() {
  </div>
  )}
 
- {subgenres.length > 0 && (
- <section className="bg-[#0b0b0b] px-8 pb-20 pt-8">
- <div className="mx-auto max-w-[1440px] overflow-hidden rounded-[24px] bg-black">
- <div className="flex min-h-[232px] flex-col justify-center bg-black px-8 py-8">
- <p className="font-sans text-sm font-bold uppercase text-[#e0b63e]">
- Horror Subgenres
- </p>
- <h2 className="archive-anton mt-7 max-w-[780px] text-5xl uppercase leading-[0.95] text-[#e9e3d4] md:text-6xl">
- The archive reveals
- <br />
- identities
- </h2>
- </div>
-
- <div className="p-7 md:p-8">
- <div className="grid gap-4 lg:grid-cols-2">
- {subgenres.map((subgenre, index) => (
- <button
- key={subgenre.name}
- type="button"
- onClick={() => setSelectedSubgenre(subgenre)}
- className="group grid min-h-[114px] grid-cols-[minmax(0,1fr)_minmax(180px,270px)] items-center gap-5 rounded-[14px] bg-[#0b0b0b] px-7 py-5 text-left transition-transform duration-200 hover:scale-[1.015] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#610C33]"
- aria-label={`Open ${subgenre.name} movies`}
- >
- <div className="min-w-0">
- <h3 className="archive-anton text-3xl leading-none text-[#e9e3d4]">
- <span className="text-[#8b0f49]">
- {String(index + 1).padStart(2, "0")}.
- </span>{" "}
- {subgenre.name}
- </h3>
- <p className="mt-3 font-sans text-sm font-bold uppercase text-[#6f6c7a]">
- {subgenre.count} {subgenre.count === 1 ? "movie" : "movies"} /{" "}
- {subgenre.percentage}% • {formatScore(subgenre.averagePersonalScore)} avg
- </p>
- </div>
-
- <CompactMovieStrip movies={subgenre.coverMovies} />
- </button>
- ))}
- </div>
- </div>
- </div>
- </section>
- )}
-
  {selectedSubgenre && (
  <div
  className="motion-modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-6 backdrop-blur-sm"
@@ -1420,11 +1388,11 @@ export default function DashboardPage() {
  {distributors.length > 0 && (
  <section className="bg-[#0b0b0b] px-8 pb-20 pt-8">
  <div className="mx-auto overflow-hidden rounded-[24px] bg-black" style={{ maxWidth: "1440px" }}>
- <div className="flex min-h-[232px] flex-col justify-center bg-black px-8 py-8">
+ <div className="flex min-h-[232px] flex-col items-center justify-center bg-black px-8 py-8 text-center">
  <p className="font-sans text-sm font-bold uppercase text-[#e0b63e]">
  Distributors and Studios
  </p>
- <h2 className="archive-anton mt-7 max-w-[780px] text-5xl uppercase leading-[0.95] text-[#e9e3d4] md:text-6xl">
+ <h2 className="archive-anton mx-auto mt-7 max-w-[780px] text-5xl uppercase leading-[0.95] text-[#e9e3d4] md:text-6xl">
  The labels stamped
  <br />
  across the collection
@@ -1767,6 +1735,52 @@ export default function DashboardPage() {
  )}
  </div>
  )}
+ </div>
+ </section>
+ )}
+
+ {subgenres.length > 0 && (
+ <section className="bg-[#0b0b0b] px-8 pb-20 pt-8">
+ <div className="mx-auto max-w-[1440px] overflow-hidden rounded-[24px] bg-black">
+ <div className="flex min-h-[232px] flex-col items-center justify-center bg-black px-8 py-8 text-center">
+ <p className="font-sans text-sm font-bold uppercase text-[#e0b63e]">
+ Horror Subgenres
+ </p>
+ <h2 className="archive-anton mx-auto mt-7 max-w-[780px] text-5xl uppercase leading-[0.95] text-[#e9e3d4] md:text-6xl">
+ The archive reveals
+ <br />
+ identities
+ </h2>
+ </div>
+
+ <div className="p-7 md:p-8">
+ <div className="grid gap-4 lg:grid-cols-2">
+ {subgenres.map((subgenre, index) => (
+ <button
+ key={subgenre.name}
+ type="button"
+ onClick={() => setSelectedSubgenre(subgenre)}
+ className="group grid min-h-[114px] grid-cols-[minmax(0,1fr)_minmax(180px,270px)] items-center gap-5 rounded-[14px] bg-[#0b0b0b] px-7 py-5 text-left transition-transform duration-200 hover:scale-[1.015] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#610C33]"
+ aria-label={`Open ${subgenre.name} movies`}
+ >
+ <div className="min-w-0">
+ <h3 className="archive-anton text-3xl leading-none text-[#e9e3d4]">
+ <span className="text-[#8b0f49]">
+ {String(index + 1).padStart(2, "0")}.
+ </span>{" "}
+ {subgenre.name}
+ </h3>
+ <p className="mt-3 font-sans text-sm font-bold uppercase text-[#6f6c7a]">
+ {subgenre.count} {subgenre.count === 1 ? "movie" : "movies"} /{" "}
+ {subgenre.percentage}% • {formatScore(subgenre.averagePersonalScore)} avg
+ </p>
+ </div>
+
+ <CompactMovieStrip movies={subgenre.coverMovies} />
+ </button>
+ ))}
+ </div>
+ </div>
  </div>
  </section>
  )}
