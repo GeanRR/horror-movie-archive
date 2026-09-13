@@ -6,6 +6,7 @@ import { MovieStars } from "@/components/movie/movie-stars";
 import { VhsPoster } from "@/components/movie/vhs-poster";
 import { abbreviateCountry, normalizeCountries } from "@/lib/constants/country-abbreviations";
 import { formatReviewScore } from "@/lib/movie-engines/stars-engine";
+import { splitDirectorNames } from "@/lib/movies/directors";
 import { useMovieStore } from "@/store/movie-store";
 import type { LibraryMovie } from "@/store/movie-store";
 
@@ -779,8 +780,7 @@ export default function YearInReviewPage() {
  return a.movie.displayTitle.localeCompare(b.movie.displayTitle);
  })[0];
  const topDirector = topMovieGroupEntry(yearEntries, ({ movie }) => {
- const director = displayValue(movie.director);
- return director ? [director] : [];
+ return splitDirectorNames(movie.director);
  });
  const topDistributor = topMovieGroupEntry(yearEntries, ({ movie }) => {
  const distributor = firstDistributor(movie.distributor);

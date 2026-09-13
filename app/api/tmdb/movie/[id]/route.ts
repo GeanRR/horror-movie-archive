@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { formatCountry } from "@/lib/constants/country-abbreviations";
+import { isDatabaseConfigured, prisma } from "@/lib/db/prisma";
 import {
   fetchDistributorFallback,
   fetchWikipediaMovieSubgenreSignals,
 } from "@/lib/metadata/distributor-fallback";
 import { getPrimarySubgenre } from "@/lib/movie-engines/subgenre-engine";
+import { formatDirectorNames } from "@/lib/movies/directors";
 import { fetchMovieRatings } from "@/lib/omdb/fetch-movie-ratings";
 import { TMDB_API_BASE } from "@/lib/tmdb/config";
 import { getTmdbApiKey } from "@/lib/tmdb/server-env";
@@ -192,18 +195,15 @@ function getDirector(
     created_by?: { name?: string }[];
   }
 ) {
-  const director = credits.crew?.find(
-    (person) => person.job === "Director" && person.name
-  )?.name;
+  const directors = formatDirectorNames(
+    credits.crew
+      ?.filter((person) => person.job === "Director")
+      .map((person) => person.name) ?? []
+  );
 
-  if (director) return director;
+  if (directors !== "—") return directors;
 
-  const creators =
-    details.created_by
-      ?.map((person) => person.name?.trim())
-      ?.filter((name): name is string => Boolean(name)) ?? [];
-
-  return creators.length > 0 ? creators.join(", ") : "—";
+  return formatDirectorNames(details.created_by?.map((person) => person.name) ?? []);
 }
 
 function getKeywordNames(payload: {
@@ -219,6 +219,23 @@ function getKeywordNames(payload: {
       ?.map((keyword) => keyword.name)
       ?.filter((name): name is string => Boolean(name?.trim())) ?? []
   );
+}
+
+async function cacheMovieCredits(
+  tmdbId: number,
+  credits: Prisma.InputJsonValue
+) {
+  if (!isDatabaseConfigured()) return;
+
+  try {
+    await prisma.tmdbMovieCreditsCache.upsert({
+      where: { tmdbId },
+      create: { tmdbId, credits },
+      update: {},
+    });
+  } catch {
+    // Metadata enrichment should still complete if the credits cache is unavailable.
+  }
 }
 
 export async function GET(
@@ -296,6 +313,10 @@ export async function GET(
     const details = await detailsResponse.json();
     const credits = await creditsResponse.json();
     const externalIds = await externalIdsResponse.json();
+
+    if (mediaType === "movie" && typeof details.id === "number") {
+      await cacheMovieCredits(details.id, credits);
+    }
 
     if (mediaType === "tv" && !isSupportedArchiveTvTitle(details)) {
       return NextResponse.json(
