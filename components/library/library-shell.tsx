@@ -95,6 +95,33 @@ function compareBadges(a: string | null | undefined, b: string | null | undefine
  return leftIndex - rightIndex;
 }
 
+function getMovieReleaseYear(movie: LibraryMovie): number | null {
+ const match = movie.year.match(/\d{4}/);
+ return match ? Number(match[0]) : null;
+}
+
+function releaseDateTime(movie: LibraryMovie): number | null {
+ const date = movie.releaseDate.trim();
+ const time = date
+ ? new Date(`${date.slice(0, 10)}T00:00:00`).getTime()
+ : NaN;
+
+ if (Number.isFinite(time)) return time;
+
+ const year = getMovieReleaseYear(movie);
+ return year ? new Date(`${year}-01-01T00:00:00`).getTime() : null;
+}
+
+function compareReleaseYearAndDate(a: LibraryMovie, b: LibraryMovie): number {
+ const yearDelta = compareNumbers(getMovieReleaseYear(a), getMovieReleaseYear(b));
+ if (yearDelta !== 0) return yearDelta;
+
+ const dateDelta = compareNumbers(releaseDateTime(a), releaseDateTime(b));
+ if (dateDelta !== 0) return dateDelta;
+
+ return compareStrings(a.year, b.year);
+}
+
 function compareBySortKey(
  a: LibraryMovie,
  b: LibraryMovie,
@@ -106,7 +133,7 @@ function compareBySortKey(
  case "titlePt":
  return compareStrings(a.titlePt, b.titlePt);
  case "year":
- return compareStrings(a.year, b.year);
+ return compareReleaseYearAndDate(a, b);
  case "director":
  return compareStrings(a.director, b.director);
  case "country":
@@ -170,10 +197,10 @@ function uniqueSorted(values: string[]): string[] {
 }
 
 function getMovieDecade(movie: LibraryMovie): string {
- const match = movie.year.match(/\d{4}/);
- if (!match) return "";
+ const year = getMovieReleaseYear(movie);
+ if (!year) return "";
 
- return `${Math.floor(Number(match[0]) / 10) * 10}s`;
+ return `${Math.floor(year / 10) * 10}s`;
 }
 
 function getActiveFilterCount(filters: LibraryFilters): number {
