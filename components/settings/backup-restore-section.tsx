@@ -8,13 +8,41 @@ import { LibraryTxtExportModal } from "@/components/settings/library-txt-export-
 import { downloadCsv } from "@/lib/export/export-csv";
 import { downloadBackup, parseBackupFile } from "@/lib/export/export-backup";
 import { restoreBackup, replaceAllConfirmation } from "@/lib/export/import-backup";
-import { Download, Upload, AlertTriangle, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { Download, Upload, AlertTriangle, CheckCircle2, XCircle, Loader2, ShieldCheck } from "lucide-react";
 
 export function BackupRestoreSection() {
  const [importState, setImportState] = useState<"idle" | "importing" | "done" | "error">("idle");
  const [importMessage, setImportMessage] = useState("");
+ const [backupState, setBackupState] = useState<"idle" | "creating" | "done" | "error">("idle");
+ const [backupMessage, setBackupMessage] = useState("");
  const [isTxtExportOpen, setIsTxtExportOpen] = useState(false);
  const fileInputRef = useRef<HTMLInputElement>(null);
+
+ const createServerBackup = async (reason: string) => {
+ const response = await fetch("/api/backups", {
+ method: "POST",
+ headers: { "Content-Type": "application/json" },
+ body: JSON.stringify({ reason }),
+ });
+
+ if (!response.ok) {
+ throw new Error("Unable to create server backup.");
+ }
+ };
+
+ const handleCreateServerBackup = async () => {
+ setBackupState("creating");
+ setBackupMessage("");
+
+ try {
+ await createServerBackup("manual");
+ setBackupState("done");
+ setBackupMessage("Server backup created.");
+ } catch {
+ setBackupState("error");
+ setBackupMessage("Unable to create server backup.");
+ }
+ };
 
  const handleExportBackup = () => {
  const date = new Date().toISOString().slice(0, 10);
@@ -32,6 +60,14 @@ export function BackupRestoreSection() {
 
  setImportState("importing");
  setImportMessage("");
+
+ try {
+ await createServerBackup("pre-replace-restore");
+ } catch {
+ setImportState("error");
+ setImportMessage("Unable to create safety backup before replace.");
+ return;
+ }
 
  const result = await parseBackupFile(file);
  if (!result.ok) {
@@ -94,6 +130,40 @@ export function BackupRestoreSection() {
  <Download className="mr-1 h-3 w-3" />
  Export TXT
  </Button>
+ </div>
+
+ <Separator className="bg-border/40" />
+
+ <div className="space-y-2">
+ <Label>Server Backup</Label>
+ <p className="text-xs text-muted-foreground">
+ Save a complete database snapshot on the server.
+ </p>
+ <Button
+ variant="outline"
+ size="sm"
+ onClick={handleCreateServerBackup}
+ disabled={backupState === "creating"}
+ >
+ {backupState === "creating" ? (
+ <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+ ) : (
+ <ShieldCheck className="mr-1 h-3 w-3" />
+ )}
+ Create Server Backup
+ </Button>
+ {backupState === "done" && (
+ <div className="flex items-center gap-2 text-sm text-green-400">
+ <CheckCircle2 className="h-4 w-4" />
+ {backupMessage}
+ </div>
+ )}
+ {backupState === "error" && (
+ <div className="flex items-center gap-2 text-sm text-destructive">
+ <XCircle className="h-4 w-4" />
+ {backupMessage}
+ </div>
+ )}
  </div>
 
  <Separator className="bg-border/40" />

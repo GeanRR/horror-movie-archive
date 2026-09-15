@@ -6,7 +6,7 @@ import { updateSession } from "@/lib/supabase/middleware";
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  if (shouldSkipPinAuth(pathname)) {
+  if (shouldSkipPinAuth(request)) {
     return NextResponse.next({ request });
   }
 
@@ -38,9 +38,21 @@ export const config = {
   ],
 };
 
-function shouldSkipPinAuth(pathname: string) {
+function isAuthorizedCronRequest(request: NextRequest) {
+  if (request.nextUrl.pathname !== "/api/backups/cron") return false;
+
+  const secret = process.env.CRON_SECRET?.trim();
+  if (!secret) return true;
+
+  return request.headers.get("authorization") === `Bearer ${secret}`;
+}
+
+function shouldSkipPinAuth(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
   return (
     pathname === "/login" ||
+    isAuthorizedCronRequest(request) ||
     pathname.startsWith("/api/auth/") ||
     pathname === "/api/stremio/manifest.json" ||
     pathname.startsWith("/api/stremio/catalog/")

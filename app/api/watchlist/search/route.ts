@@ -16,7 +16,10 @@ type OmdbSearchItem = {
   imdbID?: string;
   Type?: string;
   Poster?: string;
+  Plot?: string;
 };
+
+const IMDB_ID_PATTERN = /^tt\d{7,10}$/i;
 
 async function fetchWithTimeout(url: string) {
   const controller = new AbortController();
@@ -30,6 +33,29 @@ async function fetchWithTimeout(url: string) {
   } finally {
     clearTimeout(timeout);
   }
+}
+
+function normalizeImdbId(value: string) {
+  const trimmed = value.trim();
+  return IMDB_ID_PATTERN.test(trimmed) ? trimmed.toLowerCase() : null;
+}
+
+function mapTmdbMovieToWatchlistResult(
+  movie: ReturnType<typeof mapTmdbApiMovie>,
+  imdbId?: string
+): WatchlistSearchResult {
+  return {
+    source: "tmdb",
+    id: imdbId ? `tmdb-imdb-${imdbId}` : `tmdb-${movie.tmdbId}`,
+    tmdbId: movie.tmdbId,
+    imdbId,
+    title: movie.title,
+    originalTitle: movie.originalTitle,
+    releaseYear: movie.releaseYear,
+    posterUrl: getTmdbPosterUrl(movie.posterPath, "detail"),
+    overview: movie.overview,
+    originalLanguage: movie.originalLanguage,
+  };
 }
 
 async function searchTmdb(query: string): Promise<WatchlistSearchResult[]> {
@@ -55,18 +81,48 @@ async function searchTmdb(query: string): Promise<WatchlistSearchResult[]> {
     .map((item) => {
       const movie = mapTmdbApiMovie(item);
 
-      return {
-        source: "tmdb" as const,
-        id: `tmdb-${movie.tmdbId}`,
-        tmdbId: movie.tmdbId,
-        title: movie.title,
-        originalTitle: movie.originalTitle,
-        releaseYear: movie.releaseYear,
-        posterUrl: getTmdbPosterUrl(movie.posterPath, "detail"),
-        overview: movie.overview,
-        originalLanguage: movie.originalLanguage,
-      };
+      return mapTmdbMovieToWatchlistResult(movie);
     });
+}
+
+async function searchTmdbByImdbId(
+  imdbId: string
+): Promise<WatchlistSearchResult[]> {
+  const apiKey = getTmdbApiKey();
+  if (!apiKey) return [];
+
+  const url = new URL(`${TMDB_API_BASE}/find/${imdbId}`);
+  url.searchParams.set("api_key", apiKey);
+  url.searchParams.set("external_source", "imdb_id");
+  url.searchParams.set("language", "en-US");
+
+  const response = await fetchWithTimeout(url.toString());
+  if (!response.ok) return [];
+
+  const payload = (await response.json()) as { movie_results?: unknown[] };
+
+  return (payload.movie_results ?? [])
+    .filter(
+      (item): item is Parameters<typeof mapTmdbApiMovie>[0] =>
+        typeof item === "object" && item !== null && "id" in item
+    )
+    .map((item) => mapTmdbMovieToWatchlistResult(mapTmdbApiMovie(item), imdbId))
+    .slice(0, 1);
+}
+
+function mapOmdbItemToWatchlistResult(item: OmdbSearchItem): WatchlistSearchResult {
+  return {
+    source: "omdb",
+    id: `omdb-${item.imdbID}`,
+    tmdbId: null,
+    imdbId: item.imdbID,
+    title: item.Title ?? "Untitled",
+    originalTitle: item.Title ?? "Untitled",
+    releaseYear: item.Year?.match(/\d{4}/)?.[0] ?? "",
+    posterUrl: item.Poster && item.Poster !== "N/A" ? item.Poster : undefined,
+    overview: item.Plot && item.Plot !== "N/A" ? item.Plot : "",
+    originalLanguage: "",
+  };
 }
 
 async function searchOmdb(query: string): Promise<WatchlistSearchResult[]> {
@@ -91,26 +147,41 @@ async function searchOmdb(query: string): Promise<WatchlistSearchResult[]> {
   }
 
   return payload.Search.filter((item) => item.imdbID && item.Title).map(
-    (item) => ({
-      source: "omdb" as const,
-      id: `omdb-${item.imdbID}`,
-      tmdbId: null,
-      imdbId: item.imdbID,
-      title: item.Title ?? "Untitled",
-      originalTitle: item.Title ?? "Untitled",
-      releaseYear: item.Year?.match(/\d{4}/)?.[0] ?? "",
-      posterUrl:
-        item.Poster && item.Poster !== "N/A" ? item.Poster : undefined,
-      overview: "",
-      originalLanguage: "",
-    })
+    mapOmdbItemToWatchlistResult
   );
+}
+
+async function searchOmdbByImdbId(
+  imdbId: string
+): Promise<WatchlistSearchResult[]> {
+  const apiKey = getOmdbApiKey();
+  if (!apiKey) return [];
+
+  const url = new URL("https://www.omdbapi.com/");
+  url.searchParams.set("apikey", apiKey);
+  url.searchParams.set("i", imdbId);
+  url.searchParams.set("type", "movie");
+  url.searchParams.set("plot", "short");
+
+  const response = await fetchWithTimeout(url.toString());
+  if (!response.ok) return [];
+
+  const payload = (await response.json()) as OmdbSearchItem & {
+    Response?: string;
+  };
+
+  if (payload.Response === "False" || !payload.imdbID || !payload.Title) {
+    return [];
+  }
+
+  return [mapOmdbItemToWatchlistResult(payload)];
 }
 
 export async function GET(request: NextRequest) {
   const query = request.nextUrl.searchParams.get("q")?.trim() ?? "";
+  const imdbId = normalizeImdbId(query);
 
-  if (query.length < ADD_MOVIE_MIN_SEARCH_LENGTH) {
+  if (!imdbId && query.length < ADD_MOVIE_MIN_SEARCH_LENGTH) {
     const body: WatchlistSearchResponse = {
       ok: false,
       error: `Enter at least ${ADD_MOVIE_MIN_SEARCH_LENGTH} characters to search.`,
@@ -119,7 +190,9 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const tmdbResults = await searchTmdb(query);
+    const tmdbResults = imdbId
+      ? await searchTmdbByImdbId(imdbId)
+      : await searchTmdb(query);
     if (tmdbResults.length > 0) {
       const body: WatchlistSearchResponse = {
         ok: true,
@@ -132,7 +205,9 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const omdbResults = await searchOmdb(query);
+    const omdbResults = imdbId
+      ? await searchOmdbByImdbId(imdbId)
+      : await searchOmdb(query);
     if (omdbResults.length > 0) {
       const body: WatchlistSearchResponse = {
         ok: true,

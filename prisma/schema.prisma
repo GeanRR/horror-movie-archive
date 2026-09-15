@@ -187,3 +187,13 @@ model StremioWatchedEvent {
   @@index([detectedAt])
   @@index([imdbId])
 }
+
+model BackupSnapshot {
+  id        String   @id @default(cuid())
+  reason    String
+  payload   Json
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([reason])
+}
